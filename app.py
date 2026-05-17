@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 # 1. إعدادات الصفحة والعرض الكامل الاحترافي
 st.set_page_config(page_title="Quantum Forex & Gold Bayesian Predictor Pro", page_icon="📊", layout="wide")
 
-# 2. تصميم مخصص (CSS) لجعل الواجهة تطابق منصات التداول العالمية
+# 2. تصميم مخصص (CSS) ليطابق منصات التداول العالمية مع إضافة مؤثرات لبطاقات الدفع
 st.markdown("""
 <style>
     .stApp {
@@ -53,10 +53,24 @@ st.markdown("""
         line-height: 1.8;
         margin-bottom: 20px;
     }
+    .crypto-box {
+        background-color: #0c0f16;
+        border: 1px dashed #ff9800;
+        padding: 10px;
+        border-radius: 6px;
+        font-family: monospace;
+        color: #ff9800;
+        font-size: 13px;
+        word-break: break-all;
+        margin-top: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# قاموس لربط الأزواج برمز ياهو فاينانس ورمز تيردينج فيو لمنع أي تعارض
+# ✅ تم وضع عنوان محفظتك الحقيقي هنا بنجاح ليعرض للعملاء عند الرغبة بالاشتراك
+MY_USDT_WALLET = "TNXrnHhVR43VXN9ivp5TWiQ7b1ygbt9jiP"
+
+# قاموس أزواج العملات والمعادن
 ASSET_DICT = {
     "الذهب (XAUUSD)": {"yahoo": "GC=F", "tv": "OANDA:XAUUSD", "pip_value": 10},
     "يورو / دولار (EURUSD)": {"yahoo": "EURUSD=X", "tv": "FX:EURUSD", "pip_value": 10},
@@ -67,7 +81,7 @@ ASSET_DICT = {
     "باوند / ين (GBPJPY)": {"yahoo": "GBPJPY=X", "tv": "FX:GBPJPY", "pip_value": 100}
 }
 
-# دالة ذكية ومحمية لجلب السعر المباشر للزوج المختار من البورصة العالمية
+# دالة جلب السعر المباشر
 def get_live_price(ticker):
     try:
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1m&range=1d"
@@ -77,22 +91,21 @@ def get_live_price(ticker):
             price = data['chart']['result'][0]['meta']['regularMarketPrice']
             return float(price)
     except Exception:
-        # أسعار احتياطية قياسية في حال انقطاع السيرفر المؤقت لضمان استقرار السستم
         fallback_prices = {"GC=F": 2350.0, "EURUSD=X": 1.0850, "GBPUSD=X": 1.2600, "JPY=X": 155.0}
         return fallback_prices.get(ticker, 1.0)
 
-# 3. إدارة حالة الجلسة لمنع الأخطاء البرمجية
+# إدارة حالة الجلسة لمنع الأخطاء البرمجية
 if 'authenticated' not in st.session_state:
     st.session_state['authenticated'] = False
 if 'chosen_plan' not in st.session_state:
     st.session_state['chosen_plan'] = None
 
 # ==========================================
-# واجهة خطط الاشتراك على طريقة TradingView
+# واجهة خطط الاشتراك على طريقة TradingView مع الدفع عبر المحفظة
 # ==========================================
 if not st.session_state['authenticated']:
-    st.markdown("<h1 style='text-align: center; color: #ffffff;'>📈 اختر خطة الاشتراك لبدء التداول</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #787b86; font-size: 16px;'>انضم إلى المتداولين المحترفين واستخدم الخوارزمية الإحصائية المتقدمة للذهب والفوركس</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #ffffff;'>📈 اختر خطة الاشتراك لتفعيل حسابك</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #787b86; font-size: 16px;'>للاشتراك، يرجى إرسال القيمة المحددة إلى محفظة المطور USDT (TRC20) الموضحة بالأسفل وتفعيل حسابك</p>", unsafe_allow_html=True)
     st.write("<br>", unsafe_allow_html=True)
     
     plan_col1, plan_col2, plan_col3 = st.columns(3)
@@ -114,25 +127,29 @@ if not st.session_state['authenticated']:
             st.error("عذراً، التسجيل في الخطة المجانية مغلق حالياً بسبب ضغط السيرفر. يرجى اختيار خطة مدفوعة.")
             
     with plan_col2:
-        st.markdown("""
+        st.markdown(f"""
         <div class="pricing-card" style="border-color: #2962ff; background-color: #171b26;">
             <div class="pricing-header" style="color: #2962ff;">خطة برو المحترفة (Pro) ⭐</div>
             <div class="pricing-price">$29.99 <span style="font-size:14px; color:#787b86;">/ شهرياً</span></div>
             <div class="pricing-features">
-                ✅ شارت TradingView الحي والتفاعلي بالكامل<br>
                 ✅ سوق الفوركس كاملاً + سوق الذهب العالمي<br>
                 ✅ تحديث حي وتلقائي للأسعار من البورصة<br>
+                ✅ تطبيق معادلة بايز الإحصائية فورياً<br>
                 ✅ حاسبة لوت ذكية متوافقة مع حسابك
             </div>
+            <div style="font-size:12px; color:#ff9800; text-align:right;">📌 ارسل $29.99 إلى محفظة USDT (TRC20):</div>
+            <div class="crypto-box">{MY_USDT_WALLET}</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("اشترك الآن في خطة PRO 🚀", key="btn_pro"):
+        
+        st.text_input("نسخ محفظة PRO ليرسل لك العميل:", value=MY_USDT_WALLET, key="copy_pro", label_visibility="collapsed")
+        if st.button("اضغط هنا لتفعيل خطة PRO بعد التحويل 🚀", key="btn_pro"):
             st.session_state['authenticated'] = True
             st.session_state['chosen_plan'] = "Pro Forex & Gold Trader"
             st.rerun()
             
     with plan_col3:
-        st.markdown("""
+        st.markdown(f"""
         <div class="pricing-card" style="border-color: #ff9800;">
             <div class="pricing-header" style="color: #ff9800;">الخطة الحوت (Premium)</div>
             <div class="pricing-price">$59.99 <span style="font-size:14px; color:#787b86;">/ شهرياً</span></div>
@@ -142,9 +159,13 @@ if not st.session_state['authenticated']:
                 ✅ دعم فني خاص لربط الاستراتيجيات بالـ API<br>
                 ✅ مؤشرات حصرية مضافة للخوارزمية الكمية
             </div>
+            <div style="font-size:12px; color:#ff9800; text-align:right;">📌 ارسل $59.99 إلى محفظة USDT (TRC20):</div>
+            <div class="crypto-box">{MY_USDT_WALLET}</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("اشترك الآن في خطة PREMIUM ✨", key="btn_prem"):
+        
+        st.text_input("نسخ محفظة PREMIUM ليرسل لك العميل:", value=MY_USDT_WALLET, key="copy_prem", label_visibility="collapsed")
+        if st.button("اضغط هنا لتفعيل خطة PREMIUM بعد التحويل ✨", key="btn_prem"):
             st.session_state['authenticated'] = True
             st.session_state['chosen_plan'] = "Premium Multi-Asset Whale"
             st.rerun()
@@ -152,7 +173,7 @@ if not st.session_state['authenticated']:
     st.stop()
 
 # ==========================================
-# واجهة المنصة الاحترافية بعد اختيار الخطة
+# واجهة المنصة الاحترافية بعد اختيار الخطة وتفعيل الدخول
 # ==========================================
 
 st.markdown(f"""
@@ -174,14 +195,11 @@ col_input, col_chart = st.columns([3, 7])
 with col_input:
     st.markdown("<h4 style='color: #00ffcc; border-bottom: 1px solid #202435; padding-bottom: 10px;'>📥 اختيار الأصل والمعطيات الإحصائية</h4>", unsafe_allow_html=True)
     
-    # قائمة اختيار الأصل المالي (ذهب أو أزواج فوركس)
     selected_asset = st.selectbox("اختر زوج التداول المطلوب تحليله:", list(ASSET_DICT.keys()))
     
-    # جلب معلومات الزوج المحدد وسعره الحي فوراً
     asset_info = ASSET_DICT[selected_asset]
     live_price = get_live_price(asset_info["yahoo"])
     
-    # عرض السعر المباشر للزوج المختار
     current_price = st.number_input(f"السعر المباشر الحالي لـ {selected_asset}:", value=live_price, format="%.5f" if "USD" in asset_info["yahoo"] and asset_info["yahoo"] != "GC=F" else "%.2f")
     
     if st.button("تحديث السعر الحي الآن 🔄"):
@@ -197,7 +215,7 @@ with col_input:
     
     trade_direction = st.radio("الاتجاه المتوقع للصفقة:", ["شراء (Buy)", "بيع (Sell)"])
 
-    # حساب الاحتمالات الشرطية الرياضية بدقة
+    # حساب الاحتمالات الشرطية الرياضية
     weight = 1.0
     if fvg: weight *= 1.3
     if ob: weight *= 1.4
@@ -213,8 +231,6 @@ with col_input:
     sl_pips = st.number_input("نقاط وقف الخسارة (SL Pips):", value=40, step=5)
     
     risk_amount = balance * risk_percent
-    
-    # حساب حجم اللوت الدقيق بناءً على طبيعة نقاط الزوج المختار (فوركس أو ذهب) لضمان عدم حدوث خطأ حسابي
     lot_size = risk_amount / (sl_pips * asset_info["pip_value"]) if sl_pips > 0 else 0.01
 
 with col_chart:
@@ -256,7 +272,6 @@ with col_chart:
     
     st.markdown(f"<h4 style='color: #00ffcc; margin-top: 25px;'>📉 شارت TradingView التفاعلي الحي لزوج: {selected_asset}</h4>", unsafe_allow_html=True)
     
-    # كود الشارت التفاعلي الذي يتغير ديناميكياً بناءً على اختيارك من القائمة
     tradingview_html = f"""
     <div class="tradingview-widget-container" style="height:700px; width:100%;">
       <div id="tradingview_chart" style="height:700px;"></div>
