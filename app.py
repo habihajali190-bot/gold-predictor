@@ -1,151 +1,147 @@
 import streamlit as st
-import pandas as pd
-import math
+import datetime
+import streamlit.components.v1 as components
 
-# إعدادات الصفحة الافتراضية
-st.set_page_config(page_title="Gold Bayesian Quantum Predictor Pro", page_icon="🪙", layout="wide")
+# إعدادات الصفحة الفخمة
+st.set_page_config(page_title="Gold Bayesian Quantum Predictor", page_icon="📊", layout="wide")
 
-# قائمة المفاتيح الصالحة لإدارة المشتركين
-VALID_KEYS = ["GOLD-777-BAYES", "ICT-PRO-2026", "STAT-TRADER-99"]
+# ==========================================
+# قاعدة بيانات المشتركين وتواريخ انتهاء الصلاحية
+# ==========================================
+SUBSCRIBERS = {
+    "STAT-TRADER-99": {"owner": "Habib (المطور)", "expiry": datetime.date(2030, 1, 1)},
+    "GOLD-777-BAYES": {"owner": "عميل أول", "expiry": datetime.date(2026, 6, 15)},
+    "ICT-PRO-2026": {"owner": "عميل ثانٍ", "expiry": datetime.date(2026, 5, 30)}
+}
 
-# ستايل داكن واحترافي
-st.markdown("""
-    <style>
-    .main { background-color: #0e1117; color: #ffffff; }
-    .stButton>button { width: 100%; background-color: #ffaa00; color: black; font-weight: bold; }
-    .go-signal { background-color: #04b431; padding: 20px; text-align: center; border-radius: 10px; font-size: 24px; font-weight: bold; }
-    .nogo-signal { background-color: #df0101; padding: 20px; text-align: center; border-radius: 10px; font-size: 24px; font-weight: bold; }
-    .lock-screen { text-align: center; padding: 50px; background-color: #1a1c23; border-radius: 15px; border: 2px solid #ffaa00; }
-    </style>
-""", unsafe_allow_html=True)
-
+# التحقق من حالة الجلسة
 if 'authenticated' not in st.session_state:
     st.session_state['authenticated'] = False
+if 'user_key' not in st.session_state:
+    st.session_state['user_key'] = ""
 
-# شاشة القفل وطلب الدفع للمشتركين
+# واجهة قفل النظام والاشتراكات
 if not st.session_state['authenticated']:
-    st.markdown("""
-        <div class="lock-screen">
-            <h1 style='color: #ffaa00;'>🪙 Gold Bayesian Predictor (النسخة المدفوعة Pro)</h1>
-            <p>هذا النظام الإحصائي محمي ومخصص للمشتركين فقط لمنع التداول العشوائي على الذهب.</p>
-            <p>للحصول على مفتاح التفعيل والاشتراك، يرجى التواصل مع الإدارة مباشرة.</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #f1c40f;'>🔐 Gold Bayesian Predictor (النسخة المدفوعة)</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #bdc3c7;'>هذا النظام الإحصائي محمي ومخصص للمشتركين فقط لتحليل أسواق المال والذهب</p>", unsafe_allow_html=True)
+    st.write("---")
     
-    st.write("")
-    user_key = st.text_input("🔑 أدخل مفتاح التفعيل الخاص بك لتشغيل النظام:", type="password")
+    token_input = st.text_input("🔑 أدخل مفتاح التفعيل الخاص بك لتشغيل النظام:", type="password")
     
     if st.button("تفعيل التطبيق واستخدام النظام"):
-        if user_key in VALID_KEYS:
-            st.session_state['authenticated'] = True
-            st.success("تم التفعيل بنجاح! جاري فتح النظام...")
-            st.rerun()
-        else:
-            st.error("مفتاح التفعيل غير صحيح أو منتهي الصلاحية!")
-else:
-    if st.sidebar.button("🔒 قفل التطبيق والأمان"):
-        st.session_state['authenticated'] = False
-        st.rerun()
-
-    st.title("🪙 نظام الاحتمالات الإحصائي لتداول الذهب (ICT + Bayes)")
-    st.subheader("النسخة التجارية المدفوعة | Premium Version")
-
-    col1, col2 = st.columns([1, 2])
-
-    with col1:
-        st.header("📥 مدخلات البيانات")
-        price = st.number_input("سعر الذهب الحالي (XAUUSD):", min_value=0.0, value=2350.0, step=0.1)
-        base_win_rate = st.slider("نسبة النجاح العامة لاستراتيجيتك P(H) %:", 10, 90, 60) / 100.0
-        
-        st.write("---")
-        st.write("**شروط خوارزمية السعر (ICT Setup):**")
-        fvg = st.checkbox("وجود فجوة سعرية (Fair Value Gap / FVG)")
-        ob = st.checkbox("وجود بلوك صانع سوق (Order Block / OB)")
-        bos = st.checkbox("كسر هيكل السوق أو تغير الاتجاه (BOS / CHoCH)")
-        liquidity = st.checkbox("سحب سيولة مكشوفة (Liquidity Sweep)")
-        
-        st.write("---")
-        adx_value = st.number_input("قراءة مؤشر قوة الاتجاه (ADX):", min_value=0.0, max_value=100.0, value=25.0)
-        
-        st.write("---")
-        st.write("**إدارة المخاطر لحسابات التمويل:**")
-        balance = st.number_input("حجم الحساب الحالي ($):", min_value=0.0, value=10000.0)
-        risk_pct = st.slider("نسبة المخاطرة للصفقة %:", 0.25, 5.0, 1.0) / 100.0
-        sl_pips = st.number_input("وقف الخسارة بالنقاط (SL Pips):", min_value=5, value=30)
-        rr_ratio = st.number_input("نسبة العائد إلى المخاطرة المستهدفة (Risk:Reward):", min_value=1.0, value=2.0, step=0.5)
-
-    # حساب منطق بايز والاحتمالات الشرطية
-    ict_score = sum([fvg, ob, bos, liquidity])
-
-    if ict_score >= 3:
-        p_a_h = 0.88
-        p_a_noth = 0.30
-    elif ict_score == 2:
-        p_a_h = 0.75
-        p_a_noth = 0.45
-    elif ict_score == 1:
-        p_a_h = 0.55
-        p_a_noth = 0.60
-    else:
-        p_a_h = 0.30
-        p_a_noth = 0.85
-
-    if adx_value >= 25:
-        p_a_h = min(p_a_h * 1.15, 0.99)
-        p_a_noth = p_a_noth * 0.80
-    else:
-        p_a_h = p_a_h * 0.75
-        p_a_noth = min(p_a_noth * 1.20, 0.99)
-
-    p_noth = 1.0 - base_win_rate
-    p_a = (p_a_h * base_win_rate) + (p_a_noth * p_noth)
-    final_prob = (p_a_h * base_win_rate) / p_a if p_a > 0 else 0.0
-
-    # حسابات إدارة المخاطر الصارمة
-    risk_amount = balance * risk_pct
-    lot_size = risk_amount / (sl_pips * 10)
-    
-    # حساب التوقع الرياضي الفعلي للصفقة E(X)
-    expected_value = (final_prob * rr_ratio) - (1.0 - final_prob)
-    
-    # حساب سلسلة الخسائر المتتالية المحتملة إحصائياً لحماية التمويل
-    if final_prob < 0.99:
-        max_losses_streak = math.log(0.01) / math.log(1.0 - final_prob) if final_prob > 0 else 1
-    else:
-        max_losses_streak = 1
-
-    with col2:
-        st.header("📊 المخرجات والتحليل الإحصائي")
-        
-        if final_prob >= 0.75 and expected_value > 0:
-            st.markdown(f'<div class="go-signal">إشارة الدخول: GO (تأكيد إحصائي وتوقع رياضي إيجابي) 🚀</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="nogo-signal">إشارة الدخول: NO GO (مخاطرة عالية أو عشوائية سعرية) ❌</div>', unsafe_allow_html=True)
+        if token_input in SUBSCRIBERS:
+            today = datetime.date.today()
+            expiry_date = SUBSCRIBERS[token_input]["expiry"]
             
-        st.write("")
-        metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
-        metrics_col1.metric("الاحتمال الأولي P(H)", f"{base_win_rate*100:.1f}%")
-        metrics_col2.metric("التوقع الرياضي E(X)", f"+{expected_value:.2f}" if expected_value > 0 else f"{expected_value:.2f}")
-        metrics_col3.metric("الاحتمالية النهائية المعدلة", f"{final_prob*100:.1f}%")
-        
-        st.write("---")
-        st.subheader("🧮 حجم العقود وإدارة الـ Drawdown")
-        
-        st.info(f"""
-        * **المبلغ المخاطر به في هذه الصفقة:** ${risk_amount:.2f}
-        * **حجم اللوت المناسب لعقد الذهب الحالي:** `{lot_size:.2f}` Lot
-        * **الهدف المقترح (Take Profit) بالنقاط:** {sl_pips * rr_ratio:.0f} نقطة.
-        """)
-        
-        st.write("---")
-        st.subheader("💡 النصائح الاحترافية وحماية الحساب")
-        if final_prob >= 0.75:
-            st.success(f"""
-            **تحليل الصفقة:** تطابق شروط الـ ICT مع زخم الـ ADX عند السعر {price} يعطيك أرجحية عالية جداً. 
-            إحصائياً، أسوأ سلسلة خسائر متتالية متوقعة لهذه الاحتمالية هي {max_losses_streak:.0f} صفقات فقط، وبالتالي حساب التمويل الخاص بك في أمان كامل مع هذا اللوت.
-            """)
+            if today <= expiry_date:
+                st.session_state['authenticated'] = True
+                st.session_state['user_key'] = token_input
+                st.success(f"🔓 تم التفعيل بنجاح! أهلاً بك.")
+                st.rerun()
+            else:
+                st.error(f"❌ هذا المفتاح انتهت صلاحيته بتاريخ ({expiry_date}).")
         else:
-            st.warning(f"""
-            **تحذير إحصائي:** الاحتمالية النهائية منخفضة والتوقع الرياضي الحالي ({expected_value:.2f}) يضعك في خانة خسارة رأس المال على المدى الطويل.
-            السوق الآن يقترب من توزيع 'المتحول العشوائي المنتظم' (حظ 50/50)، يفضل انتظار سحب سيولة واضح أو فجوة سعرية جديدة لكسر هذه العشوائية.
-            """)
+            st.error("❌ مفتاح التفعيل غير صحيح!")
+    st.stop()
+
+# واجهة المنصة بعد التفعيل
+user_info = SUBSCRIBERS[st.session_state['user_key']]
+st.markdown(f"<h1 style='text-align: center; color: #00ffcc;'>📊 Gold Bayesian Quantum Predictor | Premium Version</h1>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center; color: #95a5a6;'>مرحباً بك: <b>{user_info['owner']}</b> | صلاحية الاشتراك مفعّلة لغاية: <b>{user_info['expiry']}</b></p>", unsafe_allow_html=True)
+
+if st.button("تسجيل الخروج 🚪"):
+    st.session_state['authenticated'] = False
+    st.session_state['user_key'] = ""
+    st.rerun()
+
+st.write("---")
+col_left, col_right = st.columns([4, 6])
+
+with col_left:
+    st.markdown("### 📥 مدخلات البيانات الإحصائية")
+    current_price = st.number_input("(XAUUSD) سعر الذهب أو الزوج الحالي:", value=2350.00, step=1.0)
+    p_h = st.slider("% P(H) نسبة النجاح العامة لاستراتيجيتك الحالية:", min_value=1.0, max_value=99.0, value=60.0) / 100.0
+    
+    st.markdown("#### 🛸 شروط خوارزمية السعر (ICT Setup)")
+    fvg = st.checkbox("(Fair Value Gap / FVG) وجود فجوة سعرية")
+    ob = st.checkbox("(Order Block / OB) وجود بلوك صانع سوق")
+    bos = st.checkbox("(BOS / CHoCH) كسر هيكل السوق أو تغير الاتجاه")
+    liquidity = st.checkbox("(Liquidity Sweep) سحب سيولة مكشوفة")
+    
+    trade_direction = st.radio("اختر نوع الصفقة المخطط لها:", ["شراء (Buy)", "بيع (Sell)"])
+
+    # خوارزمية بايز لحساب الاحتمالات الشرطية للفوركس
+    weight = 1.0
+    if fvg: weight *= 1.3
+    if ob: weight *= 1.4
+    if bos: weight *= 1.5
+    if liquidity: weight *= 1.4
+    
+    posterior_p = (p_h * weight) / ((p_h * weight) + (1 - p_h))
+    if posterior_p > 0.99: posterior_p = 0.99
+    
+    st.markdown("#### 🧮 حجم العقود وإدارة الحساب (Risk Management)")
+    balance = st.number_input("حجم الحساب الإجمالي ($):", value=10000.0, step=100.0)
+    risk_percent = st.slider("نسبة المخاطرة للمحفظة (%):", min_value=0.1, max_value=5.0, value=1.0) / 100.0
+    sl_pips = st.number_input("عدد نقاط وقف الخسارة (SL Pips):", value=40, step=5)
+    
+    risk_amount = balance * risk_percent
+    lot_size = risk_amount / (sl_pips * 10) if sl_pips > 0 else 0.01
+
+with col_right:
+    st.markdown("### 🚨 إشارة الدخول والتحليل الفوري")
+    final_percentage = posterior_p * 100
+    
+    if final_percentage >= 75.0:
+        st.markdown(f"""
+        <div style='background-color: #2ecc71; padding: 20px; border-radius: 10px; text-align: center; color: white;'>
+            <h2 style='margin: 0;'>🟢 إشارة دخول صريحة: {trade_direction}</h2>
+            <p style='margin: 5px 0 0 0; font-size: 18px;'>الاحتمال الإحصائي للنجاح قوي جداً ويساوي: <b>{final_percentage:.1f}%</b></p>
+        </div>
+        """, unsafe_allow_html=True)
+    elif 55.0 <= final_percentage < 75.0:
+        st.markdown(f"""
+        <div style='background-color: #f39c12; padding: 20px; border-radius: 10px; text-align: center; color: white;'>
+            <h2 style='margin: 0;'>🟡 انتظر: الشروط غير كافية</h2>
+            <p style='margin: 5px 0 0 0; font-size: 18px;'>الاحتمال الشرطي الحالي: <b>{final_percentage:.1f}%</b></p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div style='background-color: #e74c3c; padding: 20px; border-radius: 10px; text-align: center; color: white;'>
+            <h2 style='margin: 0;'>🔴 مخاطرة عالية: تجنب الدخول</h2>
+            <p style='margin: 5px 0 0 0; font-size: 18px;'>احتمال نجاح الصفقة هابط ويساوي: <b>{final_percentage:.1f}%</b></p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    st.markdown("#### 📊 خطة العقد وإدارة المخاطر المقترحة")
+    st.info(f"""
+    * **المبلغ المخاطر به في هذه الصفقة:** ${risk_amount:.2f}
+    * **حجم اللوت (Lot Size) المناسب تماماً لحسابك:** {lot_size:.2f} لوت
+    """)
+    
+    st.markdown("---")
+    st.markdown("### 📉 الشارت الحي والتفاعلي الشامل (TradingView)")
+    
+    tradingview_html = """
+    <div class="tradingview-widget-container" style="height:500px;width:100%;">
+      <div id="tradingview_chart"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+      <script type="text/javascript">
+      new TradingView.widget({
+        "autosize": true,
+        "symbol": "OANDA:XAUUSD",
+        "interval": "15",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "ar",
+        "enable_publishing": false,
+        "hide_side_toolbar": false,
+        "allow_symbol_change": true,
+        "container_id": "tradingview_chart"
+      });
+      </script>
+    </div>
+    """
+    components.html(tradingview_html, height=520)
