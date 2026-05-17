@@ -14,7 +14,6 @@ st.markdown("""
         background-color: #0c0f16;
         color: #ffffff;
     }
-    /* تنسيق الصناديق الرئيسية */
     div[data-testid="stBlock"] {
         background-color: #131722;
         padding: 20px;
@@ -26,7 +25,6 @@ st.markdown("""
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-weight: 600;
     }
-    /* تنسيق بطاقات خطط الاشتراك */
     .pricing-card {
         background-color: #1c2030;
         border: 1px solid #2962ff;
@@ -67,7 +65,6 @@ st.markdown("""
         margin-top: 10px;
         margin-bottom: 15px;
     }
-    /* 🛠️ إصلاح جذري لألوان وتصميم أزرار التفعيل لمنع ظهورها باللون الأبيض */
     div.stButton > button {
         background-color: #2962ff !important;
         color: white !important;
@@ -85,11 +82,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# عنوان محفظتك الحقيقي المستخرج
+# عنوان محفظتك الحقيقي
 MY_USDT_WALLET = "TNXrnHhVR43VXN9ivp5TWiQ7b1ygbt9jiP"
 
-# قاموس أزواج العملات والمعادن
+# 🌟 قاموس الأصول المحدث بعد إضافة البيتكوين وتعديل قيم النقاط (Pip Value) لتناسب الكريبتو
 ASSET_DICT = {
+    "البيتكوين (BTCUSD)": {"yahoo": "BTC-USD", "tv": "BINANCE:BTCUSDT", "pip_value": 1},
     "الذهب (XAUUSD)": {"yahoo": "GC=F", "tv": "OANDA:XAUUSD", "pip_value": 10},
     "يورو / دولار (EURUSD)": {"yahoo": "EURUSD=X", "tv": "FX:EURUSD", "pip_value": 10},
     "باوند / دولار (GBPUSD)": {"yahoo": "GBPUSD=X", "tv": "FX:GBPUSD", "pip_value": 10},
@@ -99,7 +97,7 @@ ASSET_DICT = {
     "باوند / ين (GBPJPY)": {"yahoo": "GBPJPY=X", "tv": "FX:GBPJPY", "pip_value": 100}
 }
 
-# دالة جلب السعر المباشر
+# دالة جلب السعر المباشر (تتعامل الآن مع العملات الرقمية والفوركس والمعادن بسلاسة)
 def get_live_price(ticker):
     try:
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1m&range=1d"
@@ -109,7 +107,8 @@ def get_live_price(ticker):
             price = data['chart']['result'][0]['meta']['regularMarketPrice']
             return float(price)
     except Exception:
-        fallback_prices = {"GC=F": 2350.0, "EURUSD=X": 1.0850, "GBPUSD=X": 1.2600, "JPY=X": 155.0}
+        # أسعار احتياطية في حال توقف السيرفر مؤقتاً
+        fallback_prices = {"BTC-USD": 65000.0, "GC=F": 2350.0, "EURUSD=X": 1.0850, "GBPUSD=X": 1.2600}
         return fallback_prices.get(ticker, 1.0)
 
 # إدارة حالة الجلسة
@@ -119,7 +118,7 @@ if 'chosen_plan' not in st.session_state:
     st.session_state['chosen_plan'] = None
 
 # ==========================================
-# واجهة خطط الاشتراك والنظام التجاري الآمن لمنع الدخول المجاني
+# واجهة خطط الاشتراك والنظام التجاري الآمن
 # ==========================================
 if not st.session_state['authenticated']:
     st.markdown("<h1 style='text-align: center; color: #ffffff;'>📈 تفعيل حسابك على المنصة الكمية</h1>", unsafe_allow_html=True)
@@ -150,7 +149,7 @@ if not st.session_state['authenticated']:
             <div class="pricing-header" style="color: #2962ff;">خطة برو للمحترفين (Pro) ⭐</div>
             <div class="pricing-price">$29.99 <span style="font-size:14px; color:#787b86;">/ شهرياً</span></div>
             <div class="pricing-features">
-                ✅ سوق الفوركس كاملاً + سوق الذهب العالمي<br>
+                ✅ سوق الفوركس والذهب + العملات الرقمية (BTC)<br>
                 ✅ تحديث حي وتلقائي للأسعار من البورصة<br>
                 ✅ تطبيق معادلة بايز الإحصائية فورياً<br>
                 ✅ حاسبة لوت ذكية متوافقة مع حسابك
@@ -160,17 +159,15 @@ if not st.session_state['authenticated']:
         </div>
         """, unsafe_allow_html=True)
         
-        # حقل إدخال لمنع الدخول المباشر العشوائي
         tx_pro = st.text_input("أدخل اسمك أو معرف التحويل (TxID) لـ PRO:", placeholder="مثال: Ahmed_FX أو Txid123...", key="input_pro")
         if st.button("طلب تفعيل خطة PRO 🚀", key="btn_pro"):
             if tx_pro.strip() == "":
                 st.warning("⚠️ يرجى إدخال اسمك أو معرف التحويل أولاً لتتم مراجعته!")
             else:
-                st.info(f"📥 تم استلام طلبك يا غالي بنجاح لـ ({tx_pro}). يرجى الانتظار بضع دقائق حتى يتم مطابقة التحويل على الشبكة وتفعيل حسابك من قبل الإدارة.")
-                # ملاحظة للمطور: إذا أردت فتح الحساب لنفسك أثناء التجربة، اكتب كلمة مرور سرية خاصة بك هنا لتدخل فوراً
+                st.info(f"📥 تم استلام طلبك بنجاح لـ ({tx_pro}). يرجى الانتظار بضع دقائق حتى يتم مطابقة التحويل على الشبكة وتفعيل حسابك من قبل الإدارة.")
                 if tx_pro == "حبيبي_تداول_99": 
                     st.session_state['authenticated'] = True
-                    st.session_state['chosen_plan'] = "Pro Forex & Gold Trader"
+                    st.session_state['chosen_plan'] = "Pro Forex, Gold & Crypto Trader"
                     st.rerun()
             
     with plan_col3:
@@ -179,7 +176,7 @@ if not st.session_state['authenticated']:
             <div class="pricing-header" style="color: #ff9800;">خطة الحوت (Premium)</div>
             <div class="pricing-price">$59.99 <span style="font-size:14px; color:#787b86;">/ شهرياً</span></div>
             <div class="pricing-features">
-                ✅ كل مميزات خطة برو المتقدمة للفوركس<br>
+                ✅ كل مميزات خطة برو المتقدمة لجميع الأسواق<br>
                 ✅ أولوية قصوى في معالجة البيانات بالسيرفر<br>
                 ✅ دعم فني خاص لربط الاستراتيجيات بالـ API<br>
                 ✅ مؤشرات حصرية مضافة للخوارزمية الكمية
@@ -210,7 +207,7 @@ st.markdown(f"""
 <div style='background-color: #131722; padding: 15px; border-radius: 12px; border: 1px solid #202435; margin-bottom: 25px;'>
     <div style='float: left; background-color: #2962ff; padding: 5px 15px; border-radius: 20px; font-size: 12px;'>حساب مفعّل: {st.session_state['chosen_plan']}</div>
     <h2 style='color: #00ffcc; margin: 0;'>📊 Quantum Forex & Gold Bayesian Predictor Pro</h2>
-    <p style='color: #787b86; margin: 5px 0 0 0;'>منصة التحليل الإحصائي وإدارة المخاطر الحية لأسواق العملات الأجنبية والمعادن</p>
+    <p style='color: #787b86; margin: 5px 0 0 0;'>منصة التحليل الإحصائي وإدارة المخاطر الحية لأسواق العملات الرقمية، الأجنبية والمعادن</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -230,7 +227,9 @@ with col_input:
     asset_info = ASSET_DICT[selected_asset]
     live_price = get_live_price(asset_info["yahoo"])
     
-    current_price = st.number_input(f"السعر المباشر الحالي لـ {selected_asset}:", value=live_price, format="%.5f" if "USD" in asset_info["yahoo"] and asset_info["yahoo"] != "GC=F" else "%.2f")
+    # تنسيق عرض السعر: الكريبتو والذهب يظهران برقمين عشريين، أما أزواج الفوركس بـ 5 أرقام
+    price_format = "%.2f" if "BTC" in asset_info["yahoo"] or asset_info["yahoo"] == "GC=F" else "%.5f"
+    current_price = st.number_input(f"السعر المباشر الحالي لـ {selected_asset}:", value=live_price, format=price_format)
     
     if st.button("تحديث السعر الحي الآن 🔄"):
         st.rerun()
@@ -245,7 +244,7 @@ with col_input:
     
     trade_direction = st.radio("الاتجاه المتوقع للصفقة:", ["شراء (Buy)", "بيع (Sell)"])
 
-    # حساب الاحتمالات الشرطية الرياضية
+    # حساب الاحتمالات الشرطية الرياضية (Bayesian Probability)
     weight = 1.0
     if fvg: weight *= 1.3
     if ob: weight *= 1.4
@@ -258,7 +257,10 @@ with col_input:
     st.markdown("<h4 style='color: #ff9800; margin-top: 20px;'>🧮 إدارة مخاطر رأس المال</h4>", unsafe_allow_html=True)
     balance = st.number_input("إجمالي حجم المحفظة ($):", value=10000.0, step=100.0)
     risk_percent = st.slider("نسبة المخاطرة المرغوبة (%):", min_value=0.1, max_value=5.0, value=1.0) / 100.0
-    sl_pips = st.number_input("نقاط وقف الخسارة (SL Pips):", value=40, step=5)
+    
+    # لـ BTC نستخدم فارق السعر بالدولار بدلاً من النقاط التقليدية لتسهيل حساب العقد للعملات الرقمية
+    sl_label = "وقف الخسارة بالدولار (SL USD) للبيتكوين:" if "BTC" in asset_info["yahoo"] else "نقاط وقف الخسارة (SL Pips):"
+    sl_pips = st.number_input(sl_label, value=500 if "BTC" in asset_info["yahoo"] else 40, step=50 if "BTC" in asset_info["yahoo"] else 5)
     
     risk_amount = balance * risk_percent
     lot_size = risk_amount / (sl_pips * asset_info["pip_value"]) if sl_pips > 0 else 0.01
@@ -293,10 +295,11 @@ with col_chart:
             """, unsafe_allow_html=True)
             
     with res_col2:
+        lot_unit = "بالمئة من الحجم" if "BTC" in asset_info["yahoo"] else "Lot"
         st.markdown(f"""
         <div style='background-color: #1c2030; padding: 12px; border-radius: 8px; border: 1px solid #2a2e3d; color: white; height: 100%; text-align: center;'>
             <p style='margin: 0; font-size: 13px; color: #787b86;'>قيمة المخاطرة المادية: <b style='color: #ef5350;'>${risk_amount:.2f}</b></p>
-            <p style='margin: 4px 0 0 0; font-size: 16px; color: #00ffcc;'>حجم اللوت المقترح: <b>{lot_size:.4f} Lot</b></p>
+            <p style='margin: 4px 0 0 0; font-size: 16px; color: #00ffcc;'>حجم العقد المقترح: <b>{lot_size:.4f} {lot_unit}</b></p>
         </div>
         """, unsafe_allow_html=True)
     
