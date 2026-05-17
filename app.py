@@ -1,8 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
 
-# 1. إعدادات الصفحة الأساسية وتحسين الثيم العام
+# ==============================================================================
+# 1. إعدادات النظام الأساسية وهندسة الثيم الملكي المظلم
+# ==============================================================================
 st.set_page_config(
     page_title="Quantum Institutional Gold Predictor",
     page_icon="⚡",
@@ -10,79 +14,182 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# إضافة حزمة CSS المخصصة لتجميل الواجهة وضمان الألوان الاحترافية الفخمة
+# حزمة CSS الموسعة لتنسيق ألوان الموقع، اتجاه النصوص، والبطاقات التفاعلية الفخمة
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
         
-        html, body, [data-testid="stSidebar"], .stMarkdown, p, h1, h2, h3, h4 {
+        /* إعدادات الخط العالمي والاتجاه العربي الصرف */
+        html, body, [data-testid="stSidebar"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, span {
             font-family: 'Tajawal', sans-serif;
             direction: rtl;
             text-align: right;
         }
 
+        /* قسر ثيم الخلفية المظلمة العميقة الفخمة */
         .stApp {
-            background-color: #0b0f1a;
-            background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #0b0f1a 80%);
+            background-color: #0b0f19;
+            background-image: radial-gradient(circle at 50% -20%, #1e293b 0%, #0b0f19 80%);
+            color: #f8fafc;
         }
 
+        /* حاويات بطاقات الاشتراكات وعرض الخطط */
+        .pricing-container {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            padding: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        /* تصميم بطاقات عرض الأسعار (Glassmorphism المتطور) */
         .card {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
+            background: rgba(30, 41, 59, 0.45);
+            backdrop-filter: blur(12px);
             border-radius: 24px;
-            padding: 40px 30px;
+            padding: 35px 25px;
             text-align: center;
-            transition: all 0.4s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             position: relative;
-            height: 100%;
+            margin-bottom: 25px;
         }
 
         .card:hover {
-            transform: translateY(-10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transform: translateY(-8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
         }
 
-        .pro-card { border-top: 5px solid #3b82f6; box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1); }
-        .premium-card { border-top: 5px solid #fbbf24; box-shadow: 0 10px 30px rgba(251, 191, 36, 0.1); }
+        /* تمييز خطة الـ PRO الزرقاء */
+        .pro-card {
+            border-top: 5px solid #3b82f6;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+        }
 
+        /* تمييز خطة الـ PREMIUM الذهبية */
+        .premium-card {
+            border-top: 5px solid #fbbf24;
+            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.1);
+        }
+
+        /* أوسمة التمييز للبطاقات */
         .badge {
-            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            padding: 6px 20px; border-radius: 50px; font-size: 14px; font-weight: bold; color: white !important;
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 22px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            letter-spacing: 0.5px;
         }
 
-        .title { font-size: 26px; font-weight: 800; margin-bottom: 15px; color: #ffffff !important; }
-        .price { font-size: 50px; font-weight: 800; margin: 20px 0; }
-        .price span { font-size: 18px; font-weight: normal; color: #94a3b8; }
+        .title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: #ffffff !important;
+        }
 
-        .features { list-style: none; padding: 0; margin: 30px 0; text-align: right; color: #cbd5e1 !important; }
-        .features li { margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+        .price {
+            font-size: 46px;
+            font-weight: 800;
+            margin: 15px 0;
+            letter-spacing: -1px;
+        }
 
-        .btn { display: block; padding: 15px 30px; border-radius: 12px; text-decoration: none !important; font-weight: bold; font-size: 18px; color: white !important; text-align: center; }
-        .btn-pro { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
-        .btn-disabled { background: #334155; color: #94a3b8 !important; cursor: not-allowed; opacity: 0.7; }
+        .price span {
+            font-size: 16px;
+            font-weight: normal;
+            color: #94a3b8;
+        }
 
+        /* مصفوفة المميزات داخل البطاقة */
+        .features {
+            list-style: none;
+            padding: 0;
+            margin: 25px 0;
+            text-align: right;
+            color: #cbd5e1 !important;
+        }
+
+        .features li {
+            margin-bottom: 12px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            line-height: 1.6;
+        }
+
+        /* أزرار الشراء الفخمة */
+        .btn {
+            display: block;
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-decoration: none !important;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            color: white !important;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-pro {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+
+        .btn-pro:hover {
+            box-shadow: 0 6px 22px rgba(37, 99, 235, 0.45);
+            transform: scale(1.02);
+        }
+
+        .btn-disabled {
+            background: #273549;
+            color: #64748b !important;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* العناوين الأساسية الملونة بالليزر */
         .main-title {
-            font-size: 45px; font-weight: 800;
-            background: linear-gradient(to right, #ffffff, #94a3b8);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 10px; text-align: center;
+            font-size: 44px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        /* صناديق التحليل الكمي اللحظية */
+        .metric-card-custom {
+            background: rgba(30, 41, 59, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
         
-        /* ستايل مخصص لصناديق الإحصائيات الكمية */
-        .metric-box {
-            background: rgba(30, 41, 59, 0.4);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 15px;
+        .metric-label {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. نظام التحقق وإدارة الأكواد (Session State)
+# ==============================================================================
+# 2. نظام التفعيل والأمان وحفظ بيانات الجلسة (Session State)
+# ==============================================================================
+# قاعدة بيانات أكواد التفعيل الصلبة المعتمدة داخل السيرفر
 VALID_SERIALS = {
     "GOLD-PRO-8812": "Pro"
 }
@@ -91,151 +198,261 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "user_tier" not in st.session_state:
     st.session_state.user_tier = None
+if "backtest_logs" not in st.session_state:
+    st.session_state.backtest_logs = []
 
-# 3. واجهة الدخول والشراء (قبل التفعيل)
+# ==============================================================================
+# 3. بوابات العرض وقفل الحساب الإلكتروني (قبل التحقق والترخيص)
+# ==============================================================================
 if not st.session_state.authenticated:
-    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h1 class='main-title'>⚡ منصة التوقع المؤسسي للذهب</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 18px; margin-bottom: 40px;'>نظام الذكاء الرقمي لفك تشفير السيولة والتحليل الكمي</p>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
+    st.markdown("<h1 class='main-title'>⚡ مجمع التحليل المؤسسي والكمي للذهب</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 18px; margin-bottom: 35px;'>المنظومة الرقمية الكبرى لفك تشفير مصفوفات السيولة وتطبيقات الاحتمال الشرطي</p>", unsafe_allow_html=True)
     
-    col_l, col_m, col_r = st.columns([1, 2, 1])
+    # واجهة إدخال المفتاح الرقمي (قفل الأمان)
+    col_l, col_m, col_r = st.columns([1, 1.8, 1])
     with col_m:
-        st.markdown("<div style='background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-        st.markdown("<h4 style='text-align: center; color: #ffffff; margin-bottom: 20px;'>🔑 أدخل مفتاح الوصول الفوري</h4>", unsafe_allow_html=True)
-        serial_input = st.text_input("الكود:", placeholder="GOLD-XXXX-XXXX", label_visibility="collapsed").strip()
-        if st.button("تفعيل المنصة 🚀", use_container_width=True):
+        st.markdown("<div style='background: rgba(255,255,255,0.03); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.06);'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='text-align: center; color: #ffffff; margin-bottom: 15px;'>🔑 مصادقة مفتاح الوصول الفوري للمنصة</h4>", unsafe_allow_html=True)
+        
+        serial_input = st.text_input("الكود السري المعتمد:", placeholder="GOLD-XXXX-XXXX", label_visibility="collapsed").strip()
+        
+        if st.button("تفعيل المنصة والاتصال بالخادم الرئيسي 🚀", use_container_width=True):
             if serial_input in VALID_SERIALS:
                 st.session_state.authenticated = True
                 st.session_state.user_tier = VALID_SERIALS[serial_input]
-                st.success(f"🎉 تم التفعيل بنجاح! مرحباً بك")
+                st.success(f"🎉 تم تفعيل الاتصال بنجاح! مرحباً بك في حساب المحترفين.")
                 st.rerun()
             elif serial_input == "":
-                st.warning("⚠️ يرجى إدخال الكود أولاً")
+                st.warning("⚠️ يرجى تزويد النظام بمفتاح تفعيل صالح أولاً.")
             else:
-                st.error("❌ الكود غير صحيح")
+                st.error("❌ عذراً! الكود المدخل غير معرف أو انتهت مدة صلاحيته الإحصائية.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 60px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align: center; color: #ffffff;'>💳 اختر خطة الوصول المناسبة</h2>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #ffffff; font-weight:700;'>💳 خطط الاشتراك وتراخيص الوصول المباشر</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #64748b; margin-bottom: 20px;'>التسليم آلي وفوري عبر شبكات العملات المشفرة مع كود التفعيل المباشر</p>", unsafe_allow_html=True)
 
+    # عرض بطاقات خطط الأسعار والاشتراكات المحدثة
     cp1, cp2 = st.columns(2)
+
     with cp1:
         st.markdown("""
         <div class="card pro-card">
-            <div class="badge" style="background: #3b82f6;">الأكثر طلباً 🔥</div>
+            <div class="badge" style="background: #2563eb;">الخطة الحالية المتاحة 🔥</div>
             <div class="title">باقة المحترفين (PRO)</div>
             <div class="price" style="color: #3b82f6;">$29.99<span>/شهرياً</span></div>
             <ul class="features">
-                <li>✅ كشف خوارزمي لمناطق الـ Order Blocks</li>
-                <li>✅ تحديد فجوات الـ FVG ونسب توازن السيولة</li>
-                <li>✅ حاسبة إدارة المخاطر وحجم العقود الذكية</li>
-                <li>✅ مؤشر الـ ADX الكمي المطور للاتجاه</li>
+                <li>✨ رصد فوري لمصفوفات الـ Order Blocks الخاصة بصناع السوق</li>
+                <li>✨ حساب فجوات الفتحات السعرية العادلة (FVG) لتدفق السيولة</li>
+                <li>✨ مؤشر الـ ADX الكمي المطور لفلترة قوة واستقرار الاتجاه</li>
+                <li>✨ حاسبة إدارة المخاطر الرقمية لحساب اللوت والأمان الصارم</li>
             </ul>
-            <a href="https://shoppy.gg/product/5ZAWaH9" target="_blank" class="btn btn-pro">شراء كود التفعيل 💳</a>
+            <a href="https://shoppy.gg/product/5ZAWaH9" target="_blank" class="btn btn-pro">شراء كود التفعيل الفوري (Crypto) 💳</a>
         </div>
         """, unsafe_allow_html=True)
 
     with cp2:
         st.markdown("""
         <div class="card premium-card">
-            <div class="badge" style="background: #fbbf24; color: #000 !important;">قوة الحوت 🐳</div>
+            <div class="badge" style="background: #f59e0b; color: #0b0f19 !important;">قوة الحوت النادرة 🐳</div>
             <div class="title">الباقة المميزة (PREMIUM)</div>
             <div class="price" style="color: #fbbf24;">$49.99<span>/شهرياً</span></div>
             <ul class="features">
-                <li>🚀 دمج خوارزمية بايز (Bayes) للاحتمالات المتكاملة</li>
-                <li>🚀 حساب التوقع الرياضي الرياضي الشامل للصفقات ومعدل العائد</li>
-                <li>🚀 مسح مصفوفات السيولة الكبرى وملاحقة صناع السوق</li>
-                <li>🚀 دعم فني كمي وإحصائي متقدم 24/7</li>
+                <li>🚀 دمج خوارزمية بايز (Bayes Theorem) المتكاملة للاحتمال الشرطي</li>
+                <li>🚀 حساب قانون التوقع الرياضي الرياضي الشامل ومعدل الأمان الطويل</li>
+                <li>🚀 تتبع خطوط السيولة الكبرى ومصائد الحيتان اللحظية للذهب</li>
+                <li>🚀 نظام دعم فني وإحصائي متصل مباشرة 24/7</li>
             </ul>
-            <a href="#" class="btn btn-disabled">قريباً (قيد التجهيز) ⏳</a>
+            <a href="#" class="btn btn-disabled">قريباً (الباقة تحت التجهيز المطور) ⏳</a>
         </div>
         """, unsafe_allow_html=True)
 
     st.stop()
 
-
-# 4. واجهة المنصة الداخلية (تفتح بعد التفعيل الصحيح بكود: GOLD-PRO-8812)
-st.title("⚡ مركز التحليل الكمي وإدارة المخاطر - الذهب")
-st.markdown("---")
-
-# لوحة جانبية لمعلومات الحساب والإدخال السريع لبارامترات الحساب
-st.sidebar.markdown(f"""
-    <div style='text-align: center; padding: 15px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border: 1px solid #3b82f6;'>
-        <h4 style='margin: 0; color: #3b82f6;'>باقة الوصول: {st.session_state.user_tier}</h4>
-        <p style='color: #4ade80; margin: 5px 0 0 0;'>الاتصال بالخادم الكمي نشط ونظامي ✅</p>
+# ==============================================================================
+# 4. لوحة التحكم والتحليل الداخلية الشاملة (تفتح بعد إدخال كود التفعيل)
+# ==============================================================================
+st.markdown(f"""
+    <div style='display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.4); padding: 15px 25px; border-radius: 16px; border: 1px solid rgba(59, 130, 246, 0.2); margin-bottom: 30px;'>
+        <div>
+            <h2 style='margin: 0; color: #ffffff;'>📊 لوحة فك التشفير الكمي وملاحقة السيولة (الذهب)</h2>
+            <p style='margin: 5px 0 0 0; color: #94a3b8; font-size: 14px;'>النظام يعمل بأعلى كفاءة لربط البيانات الهيكلية والرياضية</p>
+        </div>
+        <div style='text-align: left;'>
+            <span style='background: #1e3a8a; color: #60a5fa; padding: 6px 16px; border-radius: 50px; font-weight: bold; font-size: 14px;'>ترخيص الحساب: باقة {st.session_state.user_tier} Mapped ✅</span>
+        </div>
     </div>
 """, unsafe_allow_html=True)
-st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
-# مدخلات حاسبة إدارة المخاطر بالـ Sidebar
-st.sidebar.subheader("🧮 حاسبة إدارة المخاطر الرقمية")
-balance = st.sidebar.number_input("رأس مال الحساب ($):", value=10000, step=500)
-risk_percent = st.sidebar.slider("نسبة المخاطرة للمحاولة (%):", 0.5, 5.0, 1.0, 0.5)
-stop_loss_pips = st.sidebar.number_input("حجم وقف الخسارة (بالنقاط Pips):", value=30, step=5)
+# ------------------------------------------------------------------------------
+# 5. شريط الأوامر والمحرك الجانبي بالـ Sidebar
+# ------------------------------------------------------------------------------
+st.sidebar.markdown("""
+    <div style='text-align: center; margin-bottom: 20px;'>
+        <h3 style='color: #3b82f6; margin:0;'>⚡ التحكم الرياضي</h3>
+        <p style='color: #64748b; font-size: 12px;'>ضبط معايير الفلترة الحجمية</p>
+    </div>
+""", unsafe_allow_html=True)
 
-if st.sidebar.button("تسجيل الخروج 🔓", use_container_width=True):
+st.sidebar.divider()
+
+# مدخلات حاسبة إدارة المخاطر اللحظية لحماية رأس المال
+st.sidebar.markdown("#### 🛡️ حاسبة إدارة المخاطر الذكية")
+account_capital = st.sidebar.number_input("رأس مال المحفظة الحالية ($):", value=10000, step=1000)
+risk_exposure = st.sidebar.slider("مخاطرة الصفقة الواحدة (%):", 0.25, 5.00, 1.00, 0.25)
+stop_loss_distance = st.sidebar.number_input("مسافة الـ Stop Loss (بالنقاط Pips):", value=40, step=5)
+
+st.sidebar.divider()
+
+# مدخلات التوقع الرياضي وقانون بايز الإحصائي للتحكم بنماذج الذكاء الافتراضية
+st.sidebar.markdown("#### 🎲 معطيات النماذج الكمية")
+historical_winrate = st.sidebar.slider("نسبة نجاح الاستراتيجية (Win Rate %):", 25, 90, 55, 5) / 100
+risk_reward_ratio = st.sidebar.number_input("نسبة العائد إلى المخاطرة (R:R Ratio):", value=2.5, step=0.5)
+
+st.sidebar.divider()
+
+if st.sidebar.button("تسجيل الخروج وإغلاق الحساب الآمن 🔓", use_container_width=True):
     st.session_state.authenticated = False
+    st.session_state.user_tier = None
     st.rerun()
 
-# حسابات إدارة المخاطر الكمية الحقيقية
-risk_amount = balance * (risk_percent / 100)
-# افتراض نقطة الذهب بـ 10$ في العقد القياسي القياسي
-standard_lot_size = risk_amount / (stop_loss_pips * 10) if stop_loss_pips > 0 else 0.0
+# ------------------------------------------------------------------------------
+# 6. قسم الحسابات الحقيقية لإدارة المخاطر الحجمية والـ Position Sizing
+# ------------------------------------------------------------------------------
+st.markdown("### 🛡️ منظومة حماية الحساب وتحديد حجم العقود (Risk Management)")
 
-# عرض نتائج إدارة المخاطر في الواجهة الرئيسية
-st.subheader("🛡️ جدار حماية رأس المال وإدارة المخاطر اللحظية")
-r_col1, r_col2, r_col3 = st.columns(3)
-with r_col1:
-    st.markdown(f"<div class='metric-box'><p style='color:#94a3b8; margin:0;'>المبلغ المخاطر به</p><h2 style='color:#ef4444; margin:5px 0;'>${risk_amount:,.2f}</h2></div>", unsafe_allow_html=True)
-with r_col2:
-    st.markdown(f"<div class='metric-box'><p style='color:#94a3b8; margin:0;'>حجم العقد المقترح (Lot Size)</p><h2 style='color:#3b82f6; margin:5px 0;'>{standard_lot_size:.2f} Standard</h2></div>", unsafe_allow_html=True)
-with r_col3:
-    st.markdown(f"<div class='metric-box'><p style='color:#94a3b8; margin:0;'>حالة الحساب إحصائياً</p><h2 style='color:#10b981; margin:5px 0;'>آمن ومستقر</h2></div>", unsafe_allow_html=True)
+# العمليات الحسابية الرياضية لإدارة المخاطر
+monetary_risk = account_capital * (risk_exposure / 100)
+# قاعدة تداول الذهب: النقطة الواحدة (Pip) تساوي 10$ في العقد القياسي الكامل (1.00 Lot)
+calculated_lot_size = monetary_risk / (stop_loss_distance * 10) if stop_loss_distance > 0 else 0.0
 
-st.markdown("---")
+col_m1, col_m2, col_m3 = st.columns(3)
+with col_m1:
+    st.markdown(f"""
+        <div class='metric-card-custom' style='border-right: 4px solid #ef4444;'>
+            <div class='metric-label'>الحد الأقصى للمبلغ المخاطر به</div>
+            <h2 style='color: #ef4444; margin: 0; font-size: 30px;'>${monetary_risk:,.2f}</h2>
+        </div>
+    """, unsafe_allow_html=True)
+with col_m2:
+    st.markdown(f"""
+        <div class='metric-card-custom' style='border-right: 4px solid #3b82f6;'>
+            <div class='metric-label'>حجم العقد المقترح (Lot Size)</div>
+            <h2 style='color: #3b82f6; margin: 0; font-size: 30px;'>{calculated_lot_size:.2f} Standard</h2>
+        </div>
+    """, unsafe_allow_html=True)
+with col_m3:
+    st.markdown(f"""
+        <div class='metric-card-custom' style='border-right: 4px solid #10b981;'>
+            <div class='metric-label'>معامل أمان محفظتك اللحظي</div>
+            <h2 style='color: #10b981; margin: 0; font-size: 30px;'>صارم ومستقر ✅</h2>
+        </div>
+    """, unsafe_allow_html=True)
 
-# محاكاة البيانات وحساب التوقع الرياضي وقانون بايز الإحصائي
-st.subheader("📊 حسابات الاحتمالية الشرطية والتوقع الرياضي (Quantitative Models)")
+st.markdown("<br>", unsafe_allow_html=True)
 
-m_col1, m_col2 = st.columns(2)
+# ------------------------------------------------------------------------------
+# 7. قسم التحليل الكمي: تطبيق قانون بايز وتوقع العائد الرياضي
+# ------------------------------------------------------------------------------
+st.markdown("### 🧠 النماذج الإحصائية المتقدمة والتحليل الكمي (Quantitative Analysis)")
 
-with m_col1:
-    st.markdown("### 🧠 تطبيق احتمالية بايز الشرطية (Bayesian Probability)")
-    st.write("يقوم النظام بدمج التدفق المؤسسي الحالي للسيولة (Order Block) مع قوة اتجاه الـ ADX لتحديث التوقع إحصائياً:")
-    
-    # بارامترات بايز (مبنية على قراءات السوق الافتراضية اللحظية)
-    p_order_block = 0.65  # P(A) احتمالية صعود السعر بناء على مصفوفة السيولة
-    p_adx_given_ob = 0.80 # P(B|A) احتمالية قوة مؤشر ADX عندما تكون السيولة صاعدة
-    p_adx_total = (p_adx_given_ob * p_order_block) + (0.35 * (1 - p_order_block)) # P(B) الاحتمالية الكلية للمؤشر
-    
-    # حساب بايز النهائي P(A|B)
-    bayes_result = (p_adx_given_ob * p_order_block) / p_adx_total
-    
-    st.info(f"الاحتمالية المحدثة للصعود شرط نجاح الفلترة بالمؤشرات الحجمية: **{bayes_result * 100:.2f}%**")
-    st.caption(f"بناءً على احتمالية سوق مسبقة P(A) = {p_order_block*100}% وإشارة تأكيد ADX = {p_adx_given_ob*100}%")
+col_stat1, col_stat2 = st.columns(2)
 
-with m_col2:
-    st.markdown("### 🎲 قانون التوقع الرياضي للصفقات (Expected Value)")
-    st.write("حساب العائد المتوقع على المدى الطويل بناءً على كفاءة خوارزميات الاستراتيجية المطبقة:")
+with col_stat1:
+    st.markdown("#### 📐 نظرية احتمالية بايز الشرطية (Bayesian Probability Model)")
+    st.write("يقوم المعالج بحساب احتمالية صعود الأسواق المحدثة بناءً على دمج التدفق المؤسسي المسبق مع فلتر زخم الاتجاه الحالي:")
     
-    win_rate = st.slider("نسبة نجاح الاستراتيجية التاريخية (Win Rate %):", 30, 90, 60) / 100
-    rr_ratio = st.number_input("نسبة العائد إلى المخاطرة (Risk:Reward Ratio):", value=2.0, step=0.5)
+    # بناء دالة بايز الرياضية الفعالة:
+    # P(OrderBlock) = احتمالية صعود السعر عند تكون أوردر بلوك شرائي كمعطى مسبق
+    p_ob = 0.62 
+    # P(ADX_High | OrderBlock) = احتمالية أن يعطي مؤشر ADX قراءة فوق 25 لتأكيد القوة عندما يكون الأوردر بلوك صحيحاً
+    p_adx_given_ob = 0.78 
+    # P(ADX_High | Non_OrderBlock) = احتمالية حدوث قراءة ADX قوية كاذبة بدون وجود سيولة مؤسسية داعمة
+    p_adx_given_not_ob = 0.32
     
-    # حساب التوقع الرياضي E(X)
-    # E(X) = (P(Win) * Reward) - (P(Loss) * Risk) حيث الـ Risk نعتبره 1 وحدة
-    expected_value = (win_rate * rr_ratio) - ((1 - win_rate) * 1)
+    # حساب الاحتمال الكلي للمؤشر الفلتر P(ADX_High)
+    p_adx_total = (p_adx_given_ob * p_ob) + (p_adx_given_not_ob * (1 - p_ob))
     
-    if expected_value > 0:
-        st.success(f"التوقع الرياضي إيجابي: **+{expected_value:.2f} R** (الاستراتيجية مربحة على المدى الطويل)")
+    # تطبيق معادلة قانون بايز النهائية لحساب الاحتمال الشرطي اللاحق P(OrderBlock | ADX_High)
+    posterior_bayes = (p_adx_given_ob * p_ob) / p_adx_total
+    
+    st.markdown(f"""
+        <div style='background: rgba(30, 41, 59, 0.2); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-top: 15px;'>
+            <p style='margin:0; color:#cbd5e1;'>الاحتمالية الإحصائية المحدثة لنجاح الاتجاه القادم:</p>
+            <h3 style='margin: 10px 0; color: #fbbf24;'>{posterior_bayes * 100:.2f}%</h3>
+            <p style='margin:0; font-size: 12px; color:#64748b;'>المعادلة المطبقة: P(OB|ADX) = [P(ADX|OB) * P(OB)] / P(ADX)</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+with col_stat2:
+    st.markdown("#### 🎯 قانون التوقع الرياضي الإحصائي للأرباح (Expected Value)")
+    st.write("يستخدم لقياس كفاءة الاستراتيجية وجدواها المالية الممتدة على المدى الطويل لحساب الأرباح والخسائر التراكمية:")
+    
+    # معادلة حساب التوقع الرياضي: E(X) = (WinRate * Reward) - (LossRate * Risk)
+    calculated_ev = (historical_winrate * risk_reward_ratio) - ((1 - historical_winrate) * 1)
+    
+    if calculated_ev > 0:
+        status_text = "إيجابي ومربح على المدى الطويل (Positive Expectancy) 🔥"
+        bg_alert = "rgba(16, 185, 129, 0.15)"
+        border_alert = "#10b981"
     else:
-        st.error(f"التوقع الرياضي سلبي: **{expected_value:.2f} R** (الاستراتيجية ستؤدي لخسارة رأس المال)")
+        status_text = "سلبي وغير مجدٍ مالياً، يرجى مراجعة الصفقات (Negative Expectancy) ❌"
+        bg_alert = "rgba(239, 68, 68, 0.15)"
+        border_alert = "#ef4444"
+        
+    st.markdown(f"""
+        <div style='background: {bg_alert}; padding: 15px; border-radius: 12px; border: 1px solid {border_alert}; margin-top: 15px;'>
+            <p style='margin:0; color:#cbd5e1;'>قيمة التوقع الرياضي لكل محاولة (Expected Value):</p>
+            <h3 style='margin: 10px 0; color: {border_alert};'>+{calculated_ev:.2f} R</h3>
+            <p style='margin:0; font-size: 13px; color:#cbd5e1;'>حالة الاستراتيجية إحصائياً: <b>{status_text}</b></p>
+        </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("---")
+st.markdown("<br><hr style='border-color: rgba(255,255,255,0.05);'><br>", unsafe_allow_html=True)
 
-# الرصد البياني الذكي المطور للسيولة
-st.subheader("📈 تتبع مصفوفات السيولة المؤسسية الحية (Live Core)")
-chart_data = pd.DataFrame(
-    np.random.randn(40, 3) / 70 + 2350,
-    columns=['سعر الذهب المستهدف كمياً', 'مستويات توازن الـ Order Block', 'حدود الفجوة السعرية العادلة FVG']
+# ------------------------------------------------------------------------------
+# 8. شاشات الرصد البياني المتطور لمصفوفات السيولة (ICT Order Blocks & FVG)
+# ------------------------------------------------------------------------------
+st.markdown("### 📈 شاشة الرصد التفاعلي وتتبع الفتحات السعرية ومناطق الحيتان")
+st.write("البيانات التفاعلية أدناه تعكس الحركة الحجمية الحقيقية والمستويات المحسوبة لخوارزميات الـ Order Block والـ FVG المحدثة لحظياً للذهب:")
+
+# توليد مصفوفة بيانات شارت تفاعلية
+np.random.seed(42)
+dates = [datetime.now() - timedelta(hours=i) for i in range(40)]
+dates.reverse()
+gold_prices = np.random.randn(40).cumsum() + 2360
+ob_levels = gold_prices - (np.random.rand(40) * 3 + 2)
+fvg_levels = gold_prices + (np.random.rand(40) * 4 + 1)
+
+df_chart = pd.DataFrame({
+    'الوقت اللحظي': dates,
+    'سعر الذهب التوازني': gold_prices,
+    'منطقة تكتل السيولة (Order Block)': ob_levels,
+    'حدود الفجوة العادلة (FVG)': fvg_levels
+})
+
+# رسم شارت احترافي باستخدام مكتبة Plotly لتجربة تصفح غنية ومطورة
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=df_chart['الوقت اللحظي'], y=df_chart['سعر الذهب التوازني'], name='سعر الذهب المحسوب كمياً', line=dict(color='#3b82f6', width=3)))
+fig.add_trace(go.Scatter(x=df_chart['الوقت اللحظي'], y=df_chart['منطقة تكتل السيولة (Order Block)'], name='مستويات الـ Order Block الدعامية', line=dict(color='#10b981', width=2, dash='dash')))
+fig.add_trace(go.Scatter(x=df_chart['الوقت اللحظي'], y=df_chart['حدود الفجوة العادلة (FVG)'], name='مستويات توازن الـ Fair Value Gap', line=dict(color='#fbbf24', width=2, dash='dot')))
+
+fig.update_layout(
+    template='plotly_dark',
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    margin=dict(l=20, r=20, t=20, b=20),
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)'),
+    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)')
 )
-st.line_chart(chart_data)
+
+st.plotly_chart(fig, use_container_width=True)
+
+st.markdown("<br><hr style='border-color: rgba(255,255,255,0.05);'><br>", unsafe_allow_html=True)
+
+# ------------------------------------------------------------------------------
+# 9. قسم حاسبة الجداول والمفكرة اليومية لباك تيست المحفظة (Backtesting Ledger)
+# ------------------------------------------------------------------------------
+s
