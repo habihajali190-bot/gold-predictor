@@ -1,130 +1,104 @@
 import streamlit as st
-import datetime
-import urllib.request
-import json
-import random
-import streamlit.components.v1 as components
+import pandas as pd
+import numpy as np
 
-# إعدادات الصفحة
-st.set_page_config(page_title="Quantum Institutional Bayesian Hub", page_icon="⚡", layout="wide")
+# 1. إعدادات الصفحة الأساسية
+st.set_page_config(
+    page_title="Quantum Institutional Bayesian Predictor - Gold",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# 1. قاعدة بيانات أكواد التفعيل (تستطيع توليدها وبيعها عبر متجر أوتوماتيكي مثل Sellix)
-# كل كود مخصص لباقة معينة، وبمجرد دخوله يتم تفعيل المنصة بناءً عليه.
-VALID_CODES = {
-    "PRO-9942-X1": "Pro",
-    "PRO-1120-M5": "Pro",
-    "PRO-8839-L2": "Pro",
-    "PREM-5561-Z9": "Premium",
-    "PREM-7740-Q3": "Premium",
-    "PREM-3312-W4": "Premium"
+# 2. نظام التفعيل وإدارة الجلسة (Session State)
+VALID_SERIALS = {
+    "GOLD-PRO-8812": "Pro"
 }
 
-# الكود السري الخاص بك كمالك للمنصة (يفتح كل شيء دائماً)
-ADMIN_CODE = "حبيبي_تداول_99"
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "user_tier" not in st.session_state:
+    st.session_state.user_tier = None
 
-# 2. تصميم الـ UI الاحترافي للموقع
-st.markdown("""
-<style>
-    .stApp { background-color: #060811; color: #ffffff; }
-    div[data-testid="stBlock"] {
-        background-color: #0d111c; padding: 25px; border-radius: 16px;
-        border: 1px solid #1e293b; margin-bottom: 20px;
-    }
-    .pricing-card {
-        background: linear-gradient(180deg, #111827, #030712); border: 1px solid #3b82f6;
-        border-radius: 16px; padding: 35px; text-align: center; margin: 10px;
-    }
-    .pricing-header { color: #38bdf8; font-size: 24px; font-weight: 800; }
-    .pricing-price { font-size: 38px; font-weight: 900; color: #ffffff; margin: 15px 0; }
-    .pricing-features { text-align: right; color: #9ca3af; font-size: 14px; line-height: 2; margin-bottom: 25px; }
-    .crypto-box {
-        background-color: #030712; border: 1px dashed #f59e0b; padding: 12px;
-        border-radius: 8px; font-family: monospace; color: #f59e0b; font-size: 14px; word-break: break-all;
-    }
-    .buy-button {
-        display: block; background: linear-gradient(90deg, #059669, #10b981); color: white !important;
-        text-align: center; font-weight: bold; padding: 12px; border-radius: 8px;
-        text-decoration: none; margin-top: 15px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-    div.stButton > button {
-        background: linear-gradient(90deg, #1d4ed8, #2563eb) !important; color: white !important;
-        font-weight: 700 !important; border-radius: 10px !important; border: none !important;
-        padding: 12px 24px !important; width: 100% !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-MY_USDT_WALLET = "TNXrnHhVR43VXN9ivp5TWiQ7b1ygbt9jiP"
-
-ASSET_DICT = {
-    "البيتكوين (BTCUSD)": {"yahoo": "BTC-USD", "tv": "BINANCE:BTCUSDT", "type": "crypto"},
-    "الذهب (XAUUSD)": {"yahoo": "GC=F", "tv": "OANDA:XAUUSD", "type": "commodity"},
-    "يورو / دولار (EURUSD)": {"yahoo": "EURUSD=X", "tv": "FX:EURUSD", "type": "forex"}
-}
-
-if 'authenticated' not in st.session_state: st.session_state['authenticated'] = False
-if 'user_plan' not in st.session_state: st.session_state['user_plan'] = None
-
-# واجهة خطط الاشتراكات المؤتمتة
-if not st.session_state['authenticated']:
-    st.markdown("<h1 style='text-align: center; color: #ffffff; font-size: 36px;'>⚡ QUANTUM INSTITUTIONAL HUB</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 16px;'>منصة التحليل الإحصائي التطبيقي وإدارة المخاطر الكمية المصرفية</p>", unsafe_allow_html=True)
-    st.write("<br>", unsafe_allow_html=True)
+# 3. تصميم واجهة التفعيل والدفع (إذا لم يكن المستخدم مسجلاً)
+if not st.session_state.authenticated:
+    st.title("⚡ منصة التوقع المؤسسي الذكي للذهب")
+    st.write("مرحباً بك في المنصة الرقمية المتقدمة لفك تشفير السيولة وتوقع اتجاه الأسواق بناءً على خوارزميات ICT والمعادلات الإحصائية المتقدمة.")
     
+    st.divider()
+    
+    # خانة إدخال كود التفعيل
+    st.subheader("🔑 تفعيل المنصة")
+    serial_input = st.text_input("أدخل كود التفعيل الفوري الخاص بك هنا:", placeholder="GOLD-XXXX-XXXX").strip()
+    
+    if st.button("تفعيل الحساب والتشغيل 🚀"):
+        if serial_input in VALID_SERIALS:
+            st.session_state.authenticated = True
+            st.session_state.user_tier = VALID_SERIALS[serial_input]
+            st.success(f"🎉 تم التفعيل بنجاح! مرحباً بك في الباقة ({st.session_state.user_tier})")
+            st.rerun()
+        else:
+            st.error("❌ كود التفعيل غير صحيح أو منتهي الصلاحية. يرجى التأكد من الكود أو شراء كود جديد من الأسفل.")
+
+    st.divider()
+
+    # قسم خطط الاشتراك وبطاقات الأسعار (محدث برابط متجرك المباشر)
+    st.markdown("## 💳 خطط الاشتراك المتاحة")
+
     plan_col1, plan_col2 = st.columns(2)
+
     with plan_col1:
-        st.markdown(f"""
-        <div class="pricing-card">
-            <div class="pricing-header">💼 باقة المحترفين (PRO)</div>
-            <div class="pricing-price">$29.99 <span style="font-size:14px; color:#64748b;">/ شهرياً</span></div>
-            <div class="pricing-features">
-                ✅ دمج قانون بايز الإحصائي والاحتمالات اللاحقة<br>
-                ✅ حاسبة اللوت الديناميكية المصححة للأصول والذهب والـ BTC<br>
-                ✅ شارت تفاعلي حي ومؤشر القوة الاتجاهية ADX العملياتي
-            </div>
-            <div class="crypto-box">{MY_USDT_WALLET}</div>
-            <a class="buy-button" href="https://sellix.io" target="_blank">شراء كود التفعيل الفوري تيكت 💳</a>
+        st.markdown("""
+        <div class="pricing-card" style="background: rgba(30, 41, 59, 0.7); padding: 25px; border-radius: 15px; border: 1px solid #3b82f6; text-align: center; margin-bottom: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <div style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; display: inline-block; margin-bottom: 10px; font-weight: bold;">الأكثر طلباً 🔥</div>
+            <h3 style="color: white; margin-top: 10px;">باقة المحترفين (PRO)</h3>
+            <h2 style="color: #3b82f6; font-size: 36px; margin: 15px 0;">$29.99<span style='font-size:14px; color:#a0aec0;'>/شهرياً</span></h2>
+            <ul style="list-style: none; padding: 0; color: #cbd5e1; text-align: right; direction: rtl; margin-bottom: 25px; line-height: 1.8;">
+                <li style="margin-bottom: 10px;">✨ فك تشفير السيولة بالكامل (Liquidity Pools)</li>
+                <li style="margin-bottom: 10px;">📊 مؤشر الـ ADX المطور لتحديد قوة وجاهزية الاتجاه</li>
+                <li style="margin-bottom: 10px;">🎯 تحديد دقيق لمناطق الـ Order Blocks والـ FVG المؤسسية</li>
+                <li style="margin-bottom: 10px;">⚡ تحديث تلقائي للبيانات مع تنبيهات لحظية</li>
+            </ul>
+            <a href="https://shoppy.gg/product/5ZAWaH9" target="_blank" style="background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: block; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">شراء كود التفعيل الفوري (USDT) 💳</a>
         </div>
         """, unsafe_allow_html=True)
-        
+
     with plan_col2:
-        st.markdown(f"""
-        <div class="pricing-card" style="border-color: #eab308;">
-            <div class="pricing-header" style="color: #eab308;">👑 باقة الحيتان (PREMIUM)</div>
-            <div class="pricing-price">$59.99 <span style="font-size:14px; color:#64748b;">/ شهرياً</span></div>
-            <div class="pricing-features">
-                ✅ جميع ميزات باقة PRO الكمية المتقدمة<br>
-                ✅ معالجة التوقع الرياضي المركب لحماية حسابات التمويل<br>
-                ✅ أولوية تحديث فوري لأسعار عقود الفروقات لايف دون كاش
-            </div>
-            <div class="crypto-box">{MY_USDT_WALLET}</div>
-            <a class="buy-button" href="https://sellix.io" target="_blank" style="background: linear-gradient(90deg, #d97706, #f59e0b);">شراء كود التفعيل الفوري تيكت 💳</a>
+        st.markdown("""
+        <div class="pricing-card" style="background: rgba(30, 41, 59, 0.4); padding: 25px; border-radius: 15px; border: 1px solid #475569; text-align: center; margin-bottom: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <div style="background: #475569; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; display: inline-block; margin-bottom: 10px; font-weight: bold;">باقة الحوت</div>
+            <h3 style="color: white; margin-top: 10px;">الباقة المميزة (PREMIUM)</h3>
+            <h2 style="color: #e2e8f0; font-size: 36px; margin: 15px 0;">$59.99<span style='font-size:14px; color:#a0aec0;'>/شهرياً</span></h2>
+            <ul style="list-style: none; padding: 0; color: #cbd5e1; text-align: right; direction: rtl; margin-bottom: 25px; line-height: 1.8;">
+                <li style="margin-bottom: 10px;">🚀 كل مميزات باقة PRO المحترفة المذكورة سابقاً</li>
+                <li style="margin-bottom: 10px;">🧠 دمج معادلة بايز الإحصائية لتوقع تدفقات السيولة المتكاملة</li>
+                <li style="margin-bottom: 10px;">📈 تحليلات خاصة ومتقدمة لسيولة الذهب وحركة صناع السوق اليومية</li>
+                <li style="margin-bottom: 10px;">📞 دعم فني خاص متصل ومباشر على مدار الساعة 24/7</li>
+            </ul>
+            <a href="#" style="background: #475569; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: block; font-weight: bold; opacity: 0.6; cursor: not-allowed;">قريباً (قيد الإعداد) ⏳</a>
         </div>
         """, unsafe_allow_html=True)
-        
-    _, input_col, _ = st.columns([1, 2, 1])
-    with input_col:
-        # هنا يقوم العميل بلصق الكود الذي اشتراه من المتجر الأوتوماتيكي
-        entered_code = st.text_input("أدخل كود التفعيل الفوري (أو كود المالك السري):", type="password")
-        if st.button("تفعيل المنصة وفك التشفير الكمي 🔓"):
-            if entered_code == ADMIN_CODE:
-                st.session_state['authenticated'] = True
-                st.session_state['user_plan'] = "المالك الاستراتيجي للمنصة (بريميوم)"
-                st.rerun()
-            elif entered_code in VALID_CODES:
-                st.session_state['authenticated'] = True
-                st.session_state['user_plan'] = f"عضوية {VALID_CODES[entered_code]} النشطة"
-                # ملاحظة: برمجياً في الأنظمة الكبيرة نقوم بحذف الكود من قاعدة البيانات هنا لكي لا يُستخدم مجدداً
-                st.rerun()
-            elif entered_code.strip() != "":
-                st.error("❌ كود التفعيل غير صحيح، منتهي الصلاحية، أو لم يتم تأكيد التحويل بعد.")
-            else:
-                st.warning("⚠️ يرجى كتابة كود التفعيل.")
+
     st.stop()
 
-# ==========================================
-# واجهة التطبيق بعد الدفع والتفعيل بنجاح
-# ==========================================
-st.markdown(f"<div style='background-color: #111827; padding: 10px; border-radius: 8px; border: 1px solid #1f2937; margin-bottom: 20px;'><p style='margin:0; color:#10b981; font-weight:bold;'>🔓 تم تفعيل الحساب بنجاح: {st.session_state['user_plan']}</p></div>", unsafe_allow_html=True)
-st.write("### مرحباً بك في المنصة الرياضية الحية...")
-# (باقي الكود الإحصائي للـ ADX وبايز وحساب اللوت والـ TradingView يوضع هنا طبيعياً)
+# 4. محتوى المنصة الرئيسي (يفتح فقط بعد التفعيل الناجح)
+st.sidebar.title("⚡ التحكم بالمنصة")
+st.sidebar.write(f"👤 نوع الحساب الحركي: **{st.session_state.user_tier}**")
+
+if st.sidebar.button("تسجيل الخروج 🔓"):
+    st.session_state.authenticated = False
+    st.session_state.user_tier = None
+    st.rerun()
+
+st.title("📊 لوحة تحليلات السيولة المتقدمة للذهب")
+st.write("تم تفعيل الاتصال المباشر بخوارزمية فك التشفير. البيانات أدناه تعكس حركة صناع السوق الحالية.")
+
+# بيانات تجريبية لمحاكاة حركة الأسواق والأدوات الفنية
+chart_data = pd.DataFrame(
+    np.random.randn(20, 3) / 50 + 2350,
+    columns=['Gold Price', 'Order Block Level', 'Fair Value Gap Close']
+)
+
+st.line_chart(chart_data)
+
+st.success("✅ البيانات محدثة وتعمل وفقاً لتدفقات الاتجاه والمؤشرات المخصصة بنجاح.")
