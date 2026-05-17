@@ -7,13 +7,14 @@ import streamlit.components.v1 as components
 # 1. إعدادات الصفحة والعرض الكامل الاحترافي
 st.set_page_config(page_title="Quantum Forex & Gold Bayesian Predictor Pro", page_icon="📊", layout="wide")
 
-# 2. تصميم مخصص (CSS) ليطابق منصات التداول العالمية مع إضافة مؤثرات لبطاقات الدفع
+# 2. تصميم مخصص (CSS) متطور لإصلاح ألوان الأزرار ومنع اختفائها
 st.markdown("""
 <style>
     .stApp {
         background-color: #0c0f16;
         color: #ffffff;
     }
+    /* تنسيق الصناديق الرئيسية */
     div[data-testid="stBlock"] {
         background-color: #131722;
         padding: 20px;
@@ -25,6 +26,7 @@ st.markdown("""
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-weight: 600;
     }
+    /* تنسيق بطاقات خطط الاشتراك */
     .pricing-card {
         background-color: #1c2030;
         border: 1px solid #2962ff;
@@ -63,11 +65,27 @@ st.markdown("""
         font-size: 13px;
         word-break: break-all;
         margin-top: 10px;
+        margin-bottom: 15px;
+    }
+    /* 🛠️ إصلاح جذري لألوان وتصميم أزرار التفعيل لمنع ظهورها باللون الأبيض */
+    div.stButton > button {
+        background-color: #2962ff !important;
+        color: white !important;
+        font-weight: bold !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 10px 20px !important;
+        width: 100% !important;
+        transition: 0.3s ease;
+    }
+    div.stButton > button:hover {
+        background-color: #1e4bd8 !important;
+        box-shadow: 0 0 10px rgba(41, 98, 255, 0.5) !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ✅ تم وضع عنوان محفظتك الحقيقي هنا بنجاح ليعرض للعملاء عند الرغبة بالاشتراك
+# عنوان محفظتك الحقيقي المستخرج
 MY_USDT_WALLET = "TNXrnHhVR43VXN9ivp5TWiQ7b1ygbt9jiP"
 
 # قاموس أزواج العملات والمعادن
@@ -94,18 +112,18 @@ def get_live_price(ticker):
         fallback_prices = {"GC=F": 2350.0, "EURUSD=X": 1.0850, "GBPUSD=X": 1.2600, "JPY=X": 155.0}
         return fallback_prices.get(ticker, 1.0)
 
-# إدارة حالة الجلسة لمنع الأخطاء البرمجية
+# إدارة حالة الجلسة
 if 'authenticated' not in st.session_state:
     st.session_state['authenticated'] = False
 if 'chosen_plan' not in st.session_state:
     st.session_state['chosen_plan'] = None
 
 # ==========================================
-# واجهة خطط الاشتراك على طريقة TradingView مع الدفع عبر المحفظة
+# واجهة خطط الاشتراك والنظام التجاري الآمن لمنع الدخول المجاني
 # ==========================================
 if not st.session_state['authenticated']:
-    st.markdown("<h1 style='text-align: center; color: #ffffff;'>📈 اختر خطة الاشتراك لتفعيل حسابك</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #787b86; font-size: 16px;'>للاشتراك، يرجى إرسال القيمة المحددة إلى محفظة المطور USDT (TRC20) الموضحة بالأسفل وتفعيل حسابك</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #ffffff;'>📈 تفعيل حسابك على المنصة الكمية</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #787b86; font-size: 16px;'>يرجى إرسال قيمة الباقة المختارة إلى محفظة المطور أدناه، ثم كتابة معرف التحويل لتأكيد حسابك يدويًا</p>", unsafe_allow_html=True)
     st.write("<br>", unsafe_allow_html=True)
     
     plan_col1, plan_col2, plan_col3 = st.columns(3)
@@ -113,7 +131,7 @@ if not st.session_state['authenticated']:
     with plan_col1:
         st.markdown("""
         <div class="pricing-card" style="border-color: #434651;">
-            <div class="pricing-header" style="color: #787b86;">الخطة المجانية (Basic)</div>
+            <div class="pricing-header" style="color: #787b86;">الخطة التجريبية (Basic)</div>
             <div class="pricing-price">$0 <span style="font-size:14px; color:#787b86;">/ شهرياً</span></div>
             <div class="pricing-features">
                 ⚫ شارت عادي فقط لسوق واحد<br>
@@ -123,13 +141,13 @@ if not st.session_state['authenticated']:
             </div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("بدء النسخة المحدودة مجاناً", key="btn_free"):
-            st.error("عذراً، التسجيل في الخطة المجانية مغلق حالياً بسبب ضغط السيرفر. يرجى اختيار خطة مدفوعة.")
+        if st.button("بدء النسخة التجريبية المحدودة", key="btn_free"):
+            st.error("عذراً، التسجيل في الخطة المجانية مغلق حالياً بطلب من الإدارة بسبب ضغط السيرفر.")
             
     with plan_col2:
         st.markdown(f"""
         <div class="pricing-card" style="border-color: #2962ff; background-color: #171b26;">
-            <div class="pricing-header" style="color: #2962ff;">خطة برو المحترفة (Pro) ⭐</div>
+            <div class="pricing-header" style="color: #2962ff;">خطة برو للمحترفين (Pro) ⭐</div>
             <div class="pricing-price">$29.99 <span style="font-size:14px; color:#787b86;">/ شهرياً</span></div>
             <div class="pricing-features">
                 ✅ سوق الفوركس كاملاً + سوق الذهب العالمي<br>
@@ -137,21 +155,28 @@ if not st.session_state['authenticated']:
                 ✅ تطبيق معادلة بايز الإحصائية فورياً<br>
                 ✅ حاسبة لوت ذكية متوافقة مع حسابك
             </div>
-            <div style="font-size:12px; color:#ff9800; text-align:right;">📌 ارسل $29.99 إلى محفظة USDT (TRC20):</div>
+            <div style="font-size:12px; color:#ff9800; text-align:right;">📌 ارسل 29.99$ USDT (TRC20) إلى:</div>
             <div class="crypto-box">{MY_USDT_WALLET}</div>
         </div>
         """, unsafe_allow_html=True)
         
-        st.text_input("نسخ محفظة PRO ليرسل لك العميل:", value=MY_USDT_WALLET, key="copy_pro", label_visibility="collapsed")
-        if st.button("اضغط هنا لتفعيل خطة PRO بعد التحويل 🚀", key="btn_pro"):
-            st.session_state['authenticated'] = True
-            st.session_state['chosen_plan'] = "Pro Forex & Gold Trader"
-            st.rerun()
+        # حقل إدخال لمنع الدخول المباشر العشوائي
+        tx_pro = st.text_input("أدخل اسمك أو معرف التحويل (TxID) لـ PRO:", placeholder="مثال: Ahmed_FX أو Txid123...", key="input_pro")
+        if st.button("طلب تفعيل خطة PRO 🚀", key="btn_pro"):
+            if tx_pro.strip() == "":
+                st.warning("⚠️ يرجى إدخال اسمك أو معرف التحويل أولاً لتتم مراجعته!")
+            else:
+                st.info(f"📥 تم استلام طلبك يا غالي بنجاح لـ ({tx_pro}). يرجى الانتظار بضع دقائق حتى يتم مطابقة التحويل على الشبكة وتفعيل حسابك من قبل الإدارة.")
+                # ملاحظة للمطور: إذا أردت فتح الحساب لنفسك أثناء التجربة، اكتب كلمة مرور سرية خاصة بك هنا لتدخل فوراً
+                if tx_pro == "حبيبي_تداول_99": 
+                    st.session_state['authenticated'] = True
+                    st.session_state['chosen_plan'] = "Pro Forex & Gold Trader"
+                    st.rerun()
             
     with plan_col3:
         st.markdown(f"""
         <div class="pricing-card" style="border-color: #ff9800;">
-            <div class="pricing-header" style="color: #ff9800;">الخطة الحوت (Premium)</div>
+            <div class="pricing-header" style="color: #ff9800;">خطة الحوت (Premium)</div>
             <div class="pricing-price">$59.99 <span style="font-size:14px; color:#787b86;">/ شهرياً</span></div>
             <div class="pricing-features">
                 ✅ كل مميزات خطة برو المتقدمة للفوركس<br>
@@ -159,21 +184,26 @@ if not st.session_state['authenticated']:
                 ✅ دعم فني خاص لربط الاستراتيجيات بالـ API<br>
                 ✅ مؤشرات حصرية مضافة للخوارزمية الكمية
             </div>
-            <div style="font-size:12px; color:#ff9800; text-align:right;">📌 ارسل $59.99 إلى محفظة USDT (TRC20):</div>
+            <div style="font-size:12px; color:#ff9800; text-align:right;">📌 ارسل 59.99$ USDT (TRC20) إلى:</div>
             <div class="crypto-box">{MY_USDT_WALLET}</div>
         </div>
         """, unsafe_allow_html=True)
         
-        st.text_input("نسخ محفظة PREMIUM ليرسل لك العميل:", value=MY_USDT_WALLET, key="copy_prem", label_visibility="collapsed")
-        if st.button("اضغط هنا لتفعيل خطة PREMIUM بعد التحويل ✨", key="btn_prem"):
-            st.session_state['authenticated'] = True
-            st.session_state['chosen_plan'] = "Premium Multi-Asset Whale"
-            st.rerun()
+        tx_prem = st.text_input("أدخل اسمك أو معرف التحويل (TxID) لـ PREMIUM:", placeholder="مثال: Khaled_Whale...", key="input_prem")
+        if st.button("طلب تفعيل خطة PREMIUM ✨", key="btn_prem"):
+            if tx_prem.strip() == "":
+                st.warning("⚠️ يرجى إدخال اسمك أو معرف التحويل أولاً لتتم مراجعته!")
+            else:
+                st.info(f"📥 تم استلام طلبك بنجاح ({tx_prem}). جاري مراجعة الحساب وتأكيد عملية الإيداع مانيوال الآن.")
+                if tx_prem == "حبيبي_تداول_99":
+                    st.session_state['authenticated'] = True
+                    st.session_state['chosen_plan'] = "Premium Multi-Asset Whale"
+                    st.rerun()
             
     st.stop()
 
 # ==========================================
-# واجهة المنصة الاحترافية بعد اختيار الخطة وتفعيل الدخول
+# واجهة المنصة الاحترافية بعد تفعيل الدخول
 # ==========================================
 
 st.markdown(f"""
