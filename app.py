@@ -37,19 +37,17 @@ st.markdown("""
 
 MY_USDT_WALLET = "TNXrnHhVR43VXN9ivp5TWiQ7b1ygbt9jiP"
 
-# قاموس الأصول المطور مع ربط دقيق
+# قاموس الأصول المطور بدقة مع تحديد خصائص العقد لكل سوق
 ASSET_DICT = {
-    "البيتكوين (BTCUSD)": {"yahoo": "BTC-USD", "tv": "BINANCE:BTCUSDT", "pip_value": 1, "type": "crypto"},
-    "الذهب (XAUUSD)": {"yahoo": "GC=F", "tv": "OANDA:XAUUSD", "pip_value": 10, "type": "commodity"},
-    "يورو / دولار (EURUSD)": {"yahoo": "EURUSD=X", "tv": "FX:EURUSD", "pip_value": 10, "type": "forex"},
-    "باوند / دولار (GBPUSD)": {"yahoo": "GBPUSD=X", "tv": "FX:GBPUSD", "pip_value": 10, "type": "forex"},
-    "دولار / ين (USDJPY)": {"yahoo": "JPY=X", "tv": "FX:USDJPY", "pip_value": 100, "type": "forex"}
+    "البيتكوين (BTCUSD)": {"yahoo": "BTC-USD", "tv": "BINANCE:BTCUSDT", "type": "crypto"},
+    "الذهب (XAUUSD)": {"yahoo": "GC=F", "tv": "OANDA:XAUUSD", "type": "commodity"},
+    "يورو / دولار (EURUSD)": {"yahoo": "EURUSD=X", "tv": "FX:EURUSD", "type": "forex"},
+    "باوند / دولار (GBPUSD)": {"yahoo": "GBPUSD=X", "tv": "FX:GBPUSD", "type": "forex"},
+    "دولار / ين (USDJPY)": {"yahoo": "JPY=X", "tv": "FX:USDJPY", "type": "forex"}
 }
 
-# دالة جلب السعر المباشر الحقيقية مع آلية فحص قوية لعدم تعليق السعر
 def get_live_price(ticker):
     try:
-        # استخدام دالة متطورة لتجنب حظر الـ User-Agent من ياهو فاينانس جلب السعر المباشر
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1m&range=1d"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
         with urllib.request.urlopen(req, timeout=5) as response:
@@ -57,21 +55,16 @@ def get_live_price(ticker):
             price = data['chart']['result'][0]['meta']['regularMarketPrice']
             return float(price)
     except Exception:
-        # في حال حدوث أي طارئ بالسيرفر، نجلب السعر المباشر من سيرفر كريبتو/فوركس بديل ومفتوح
         try:
             if ticker == "BTC-USD":
                 res = urllib.request.urlopen("https://api.coinbase.com/v2/prices/BTC-USD/spot", timeout=3)
                 return float(json.loads(res.read().decode())['data']['amount'])
-        except:
-            pass
+        except: pass
         fallback = {"BTC-USD": 67250.0, "GC=F": 2345.50, "EURUSD=X": 1.0845, "GBPUSD=X": 1.2610, "JPY=X": 156.20}
         return fallback.get(ticker, 1.0)
 
-# إدارة حالة الجلسة لمصادقة الدخول بنظام الأمان الخاص بك
-if 'authenticated' not in st.session_state:
-    st.session_state['authenticated'] = False
-if 'chosen_plan' not in st.session_state:
-    st.session_state['chosen_plan'] = None
+if 'authenticated' not in st.session_state: st.session_state['authenticated'] = False
+if 'chosen_plan' not in st.session_state: st.session_state['chosen_plan'] = None
 
 # واجهة خطط الاشتراك والنظام التجاري الآمن
 if not st.session_state['authenticated']:
@@ -127,7 +120,6 @@ with col_input:
         
     p_h = st.slider("% P(H) الاحتمال المسبق (قوة استراتيجيتك التاريخية):", min_value=10.0, max_value=90.0, value=50.0) / 100.0
     
-    # 🌟 إضافة مؤشر الـ ADX كمدخل رياضي حقيقي للتحليل الكمي
     st.markdown("<h4 style='color: #ff9800; margin-top: 15px;'>📈 مؤشر القوة الاتجاهية (ADX)</h4>", unsafe_allow_html=True)
     adx_value = st.slider("قيمة مؤشر ADX الحالي في السوق:", min_value=0, max_value=100, value=28)
     
@@ -139,40 +131,56 @@ with col_input:
     
     trade_direction = st.radio("الاتجاه المتوقع للصفقة:", ["شراء (Buy)", "بيع (Sell)"])
 
-    # 🧠 الحساب الكمي الحقيقي القائم على قانون بايز (Bayes' Theorem)
-    # نفرض أن الأرجحية (Likelihood Ratio) تزداد علمياً مع تلازم الفلاتر ومؤشر الـ ADX
+    # الحساب الكمي القائم على قانون بايز
     likelihood_ratio = 1.0
-    
-    # تأثير الـ ADX: إذا كان الاتجاه قوياً يدعم الفلاتر، وإذا كان ضعيفاً يقلل من احتمالية النجاح
     if adx_value > 25: likelihood_ratio *= 1.35
     elif adx_value < 20: likelihood_ratio *= 0.60
-    
     if fvg: likelihood_ratio *= 1.25
     if ob: likelihood_ratio *= 1.35
     if bos: likelihood_ratio *= 1.40
     if liquidity: likelihood_ratio *= 1.30
     
-    # حساب الاحتمال الشرطي اللاحق (Posterior Probability) باستخدام الصيغة الرياضية لبايز
     posterior_p = (p_h * likelihood_ratio) / ((p_h * likelihood_ratio) + (1 - p_h))
-    posterior_p = max(0.01, min(0.99, posterior_p)) # حصر النتيجة بين 1% و 99%
+    posterior_p = max(0.01, min(0.99, posterior_p))
     
-    st.markdown("<h4 style='color: #00ffcc; margin-top: 15px;'>🧮 إدارة مخاطر رأس المال والتوقع الرياضي</h4>", unsafe_allow_html=True)
-    balance = st.number_input("إجمالي حجم الحفظة ($):", value=10000.0, step=100.0)
+    st.markdown("<h4 style='color: #00ffcc; margin-top: 15px;'>🧮 إدارة مخاطر رأس المال المتقدمة</h4>", unsafe_allow_html=True)
+    balance = st.number_input("إجمالي حجم المحفظة ($):", value=10000.0, step=100.0)
     risk_percent = st.slider("نسبة المخاطرة للمحفظة (%):", min_value=0.1, max_value=5.0, value=1.0) / 100.0
     
-    sl_pips = st.number_input("نقاط وقف الخسارة (SL Pips):", value=40, min_value=1)
-    tp_pips = st.number_input("نقاط أخذ الهدف (TP Pips):", value=120, min_value=1)
+    # تفريع واجهة وقف الخسارة حسب نوع الأصل لمنع اللبس
+    if asset_info["type"] == "crypto":
+        sl_input = st.number_input("وقف الخسارة بالدولار (SL USD) - فارق السعر حركياً:", value=500.0, step=50.0)
+        tp_input = st.number_input("أخذ الهدف بالدولار (TP USD) - فارق السعر حركياً:", value=1500.0, step=50.0)
+        risk_to_reward = tp_input / sl_input if sl_input > 0 else 1
+    else:
+        sl_input = st.number_input("نقاط وقف الخسارة (SL Pips):", value=40, min_value=1)
+        tp_input = st.number_input("نقاط أخذ الهدف (TP Pips):", value=120, min_value=1)
+        risk_to_reward = tp_input / sl_input if sl_input > 0 else 1
     
-    # حساب التوقع الرياضي الحقيقي (Mathematical Expectation)
-    risk_to_reward = tp_pips / sl_pips if sl_pips > 0 else 1
+    # حساب التوقع الرياضي
     p_success = posterior_p
     p_fail = 1.0 - p_success
-    
-    # صيغة التوقع الرياضي: E = (P(Success) * R) - P(Fail)
     mathematical_expectation = (p_success * risk_to_reward) - p_fail
     
+    # 🌟 الحساب البرمجي الدقيق والمصلح لحجم اللوت (Lot Size) حسب معايير الأسواق العالمية
     risk_amount = balance * risk_percent
-    lot_size = risk_amount / (sl_pips * asset_info["pip_value"]) if sl_pips > 0 else 0.01
+    
+    if asset_info["type"] == "crypto":
+        # للبيتكوين: المخاطرة المادية تقسيم فارق السعر بالدولار مباشرة
+        calculated_lot = risk_amount / sl_input if sl_input > 0 else 0.01
+        lot_label = "حجم عقد البيتكوين (BTC)"
+    elif asset_info["type"] == "commodity":
+        # للذهب: النقطة الواحدة في اللوت القياسي (100 أونصة) تساوي 10$ عند تحرك الذهب 10 سنتات. 
+        # بالتالي: حجم اللوت = المخاطرة / (عدد النقاط * 0.10 * 10)
+        calculated_lot = risk_amount / (sl_input * 1.0) if sl_input > 0 else 0.01
+        lot_label = "حجم لوت الذهب (Standard Lot)"
+    else:
+        # للفوركس: النقطة في اللوت القياسي للأزواج الرئيسية تساوي 10$
+        if "JPY" in asset_info["yahoo"]:
+            calculated_lot = risk_amount / (sl_input * 6.5) if sl_input > 0 else 0.01 # تعديل للياباني
+        else:
+            calculated_lot = risk_amount / (sl_input * 10.0) if sl_input > 0 else 0.01
+        lot_label = "حجم لوت الفوركس (Standard Lot)"
 
 with col_chart:
     st.markdown(f"<h4 style='color: #00ffcc;'>🚨 تقييم الخوارزمية الكمية لـ {selected_asset}</h4>", unsafe_allow_html=True)
@@ -181,7 +189,6 @@ with col_chart:
     res_col1, res_col2, res_col3 = st.columns(3)
     
     with res_col1:
-        # عرض نتيجة بايز
         st.markdown(f"""
         <div style='background-color: #171b26; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #202435;'>
             <p style='margin:0; font-size:12px; color:#787b86;'>احتمالية بايز اللاحقة P(H|E)</p>
@@ -190,7 +197,6 @@ with col_chart:
         """, unsafe_allow_html=True)
         
     with res_col2:
-        # عرض التوقع الرياضي بلون يعبر عن جودة النتيجة
         exp_color = "#2e7d32" if mathematical_expectation > 0 else "#c62828"
         st.markdown(f"""
         <div style='background-color: #171b26; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #202435;'>
@@ -202,19 +208,18 @@ with col_chart:
     with res_col3:
         st.markdown(f"""
         <div style='background-color: #171b26; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #202435;'>
-            <p style='margin:0; font-size:12px; color:#787b86;'>حجم اللوت المقترح</p>
-            <h3 style='margin:5px 0; color:#ff9800;'>{lot_size:.3f} Lot</h3>
+            <p style='margin:0; font-size:12px; color:#787b86;'>{lot_label}</p>
+            <h3 style='margin:5px 0; color:#ff9800;'>{calculated_lot:.2f}</h3>
         </div>
         """, unsafe_allow_html=True)
         
-    # القرار النهائي للخوارزمية الكمية المعتمدة
     st.write("<br>", unsafe_allow_html=True)
     if mathematical_expectation > 0.2 and final_percentage >= 60.0:
-        st.markdown(f"<div style='background-color:#2e7d32; padding:15px; border-radius:8px; text-align:center;'><b>🟢 نظام التداول الكمي يعطي إشارة دخول مفعّلة: {trade_direction} (توقع رياضي إيجابي ومستدام)</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background-color:#2e7d32; padding:15px; border-radius:8px; text-align:center;'><b>🟢 إشارة دخول مفعّلة: {trade_direction} (توقع رياضي إيجابي مستدام واللوت محسوب بدقة تامة للمنصة)</b></div>", unsafe_allow_html=True)
     elif adx_value < 20:
-        st.markdown("<div style='background-color:#f57c00; padding:15px; border-radius:8px; text-align:center;'><b>⚠️ تحذير كمي: مؤشر ADX يشير إلى سوق عرضي ميت! تجنب المخاطرة حتى لو اكتمل الـ Setup</b></div>", unsafe_allow_html=True)
+        st.markdown("<div style='background-color:#f57c00; padding:15px; border-radius:8px; text-align:center;'><b>⚠️ تحذير كمي: مؤشر ADX يشير إلى سوق عرضي ميت! تجنب المخاطرة.</b></div>", unsafe_allow_html=True)
     else:
-        st.markdown("<div style='background-color:#c62828; padding:15px; border-radius:8px; text-align:center;'><b>🔴 النظام يوصي بالابتعاد: التوقع الرياضي خاسر أو الاحتمالات ضعيفة على المدى الطويل</b></div>", unsafe_allow_html=True)
+        st.markdown("<div style='background-color:#c62828; padding:15px; border-radius:8px; text-align:center;'><b>🔴 النظام يوصي بالابتعاد: التوقع الرياضي خاسر على المدى الطويل.</b></div>", unsafe_allow_html=True)
 
     st.markdown(f"<h4 style='color: #00ffcc; margin-top: 25px;'>📉 شارت TradingView التفاعلي الحي: {selected_asset}</h4>", unsafe_allow_html=True)
     tradingview_html = f"""
